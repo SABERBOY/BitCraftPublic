@@ -93,6 +93,7 @@ impl PlayerActionState {
             "Player doesn't have Base PlayerActionState"
         );
         a.was_consumed = true;
+        a.start_time = a.start_time + (a.duration * 9 / 10);
         ctx.db.player_action_state().auto_id().update(a);
 
         let mut a = unwrap_or_err!(
@@ -100,6 +101,7 @@ impl PlayerActionState {
             "Player doesn't have UpperBody PlayerActionState"
         );
         a.was_consumed = true;
+        a.start_time = a.start_time + (a.duration * 9 / 10);
         ctx.db.player_action_state().auto_id().update(a);
 
         Ok(())
@@ -130,6 +132,18 @@ impl PlayerActionState {
         }
 
         player_action_helpers::fail_timing(ctx, entity_id, action_type, format!("Tried to {{0}} too quickly|~{:?}", action_type))
+    }
+
+    pub fn validate_timestamp_basic(
+        ctx: &ReducerContext,
+        entity_id: u64,
+        action_type: PlayerActionType,
+        timestamp: u64,
+    ) -> Result<(), String> {
+        let layer = action_type.get_layer(ctx);
+        let player_action = unwrap_or_err!(PlayerActionState::get_state(ctx, &entity_id, &layer), "Player has no ActionState");
+
+        return move_validation_helpers::validate_move_timestamp(player_action.start_time, timestamp, ctx.timestamp);
     }
 
     pub fn validate(ctx: &ReducerContext, actor_id: u64, action_type: PlayerActionType, target: Option<u64>) -> Result<(), String> {

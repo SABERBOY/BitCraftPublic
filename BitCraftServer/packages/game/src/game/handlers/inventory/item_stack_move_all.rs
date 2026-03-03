@@ -8,7 +8,6 @@ use crate::game::reducer_helpers::player_action_helpers;
 use crate::messages::action_request::PlayerItemStackMoveAllRequest;
 use crate::messages::components::*;
 use crate::messages::game_util::*;
-use crate::player_state;
 use crate::unwrap_or_err;
 use spacetimedb::ReducerContext;
 
@@ -63,15 +62,13 @@ pub fn item_stack_move_all(ctx: &ReducerContext, request: PlayerItemStackMoveAll
         request.from_pocket.pocket_index
     );
 
+    let wallet_pocket = target_inventory.wallet_pocket_target(ctx, &source_item);
     // target inventory is overridden by wallet if we're moving a hexcoin item stack into a player inventory from a non-wallet source
-    let wallet_pocket = InventoryState::wallet_pocket_target(ctx, &source_item);
     if wallet_pocket.is_some()
-        && ctx.db.player_state().entity_id().find(target_inventory.owner_entity_id).is_some()
         && !(source_inventory.owner_entity_id == target_inventory.owner_entity_id && source_inventory.inventory_index != 2)
     {
         target_inventory = InventoryState::get_player_wallet(ctx, target_inventory.owner_entity_id).unwrap();
     }
-
     if !target_inventory.fits(ctx, source_item.clone_with_quantity(1)) {
         return Err("~Target inventory is full".into());
     }

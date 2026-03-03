@@ -1389,6 +1389,15 @@ pub struct TravelerTaskDesc {
     pub description: String,
 }
 
+#[static_data_staging_table(traveler_task_knowledge_requirement_desc)]
+#[spacetimedb::table(name = traveler_task_knowledge_requirement_desc, public)]
+#[derive(Clone, PartialEq, Debug)]
+pub struct TravelerTaskKnowledgeRequirementDesc {
+    #[primary_key]
+    pub traveler_task_id: i32,
+    pub required_knowledges: Vec<i32>,
+    pub blocking_knowledges: Vec<i32>,
+}
 
 #[static_data_staging_table(character_stat_desc)]
 #[spacetimedb::table(name = character_stat_desc, public)]

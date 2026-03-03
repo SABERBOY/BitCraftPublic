@@ -1,7 +1,10 @@
 use spacetimedb::{ReducerContext, Table};
 
 use crate::{
-    game::{game_state, reducer_helpers::player_action_helpers},
+    game::{
+        game_state::{self, game_state_filters},
+        reducer_helpers::player_action_helpers,
+    },
     messages::{
         action_request::PlayerPostOrderRequest,
         components::{
@@ -34,6 +37,10 @@ pub fn order_post_sell_order(ctx: &ReducerContext, request: PlayerPostOrderReque
         ctx.db.building_state().entity_id().find(request.building_entity_id),
         "Building does not exist"
     );
+
+    if building.distance_to(ctx, &game_state_filters::coordinates_float(ctx, actor_id).into()) > 2 {
+        return Err("Too far".into());
+    }
 
     let claim_entity_id = building.claim_entity_id;
 

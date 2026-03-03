@@ -724,7 +724,10 @@ impl InventoryState {
         Self::get_by_owner_with_index(ctx, player_entity_id, 2)
     }
 
-    pub fn wallet_pocket_target(ctx: &ReducerContext, item_stack: &ItemStack) -> Option<usize> {
+    pub fn wallet_pocket_target(&self, ctx: &ReducerContext, item_stack: &ItemStack) -> Option<usize> {
+        if ctx.db.player_state().entity_id().find(self.owner_entity_id).is_none() {
+            return None;
+        }
         if item_stack.item_type == ItemType::Cargo {
             return None;
         }
@@ -871,13 +874,11 @@ impl InventoryState {
         let item_stack = item_stack.fix_durability();
 
         //hex coin use wallet first
-        let wallet_pocket = InventoryState::wallet_pocket_target(ctx, &item_stack);
-
-        let mut inventory = if wallet_pocket.is_some() {
-            InventoryState::get_player_wallet(ctx, player_entity_id).unwrap()
-        } else {
-            InventoryState::get_by_owner(ctx, player_entity_id).unwrap()
-        };
+        let mut inventory = InventoryState::get_by_owner(ctx, player_entity_id).unwrap();
+        let wallet_pocket = inventory.wallet_pocket_target(ctx, &item_stack);
+        if wallet_pocket.is_some() {
+            inventory = InventoryState::get_player_wallet(ctx, player_entity_id).unwrap();
+        }
 
         if item_stack.item_type == ItemType::Item {
             //handle item list items
@@ -995,7 +996,7 @@ impl InventoryState {
                         continue;
                     }
 
-                    let wallet_pocket = InventoryState::wallet_pocket_target(ctx, &stack_to_remove);
+                    let wallet_pocket = wallet.wallet_pocket_target(ctx, &stack_to_remove);
 
                     //wallet item
                     if let Some(wallet_pocket_index) = wallet_pocket {
@@ -1074,7 +1075,8 @@ impl InventoryState {
         discovery: &mut Discovery,
         item_stack: &mut ItemStack,
     ) -> bool {
-        if InventoryState::wallet_pocket_target(ctx, item_stack).is_some() {
+        let mut inventory = InventoryState::get_player_inventory(ctx, player_entity_id).unwrap();
+        if inventory.wallet_pocket_target(ctx, item_stack).is_some() {
             let coin_amount = if item_stack.item_id == ItemStack::hex_coins(0).item_id {
                 item_stack.quantity
             } else {
@@ -1086,7 +1088,6 @@ impl InventoryState {
             return true;
         }
 
-        let mut inventory = InventoryState::get_player_inventory(ctx, player_entity_id).unwrap();
         if InventoryState::add_partial_to_inventory_and_discover(ctx, player_entity_id, discovery, &mut inventory, item_stack, true) {
             ctx.db.inventory_state().entity_id().update(inventory);
             return true;
@@ -1373,7 +1374,7 @@ impl InventoryState {
 
             for (inventory_index, inventory) in inventories.iter_mut().enumerate() {
                 //Ensure only wallet items go into the wallet
-                let wallet_pocket = InventoryState::wallet_pocket_target(ctx, item_stack);
+                let wallet_pocket = inventory.wallet_pocket_target(ctx, item_stack);
                 if let Some(wallet_pocket_ix) = wallet_pocket {
                     if inventory.add_at(ctx, wallet_pocket_ix, *item_stack) {
                         changed_inventory_indices.insert(inventory_index);

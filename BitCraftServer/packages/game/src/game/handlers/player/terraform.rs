@@ -104,6 +104,7 @@ fn reduce(
     request: &PlayerTerraformRequest,
     dry_run: bool,
 ) -> Result<(), String> {
+    PlayerActionState::validate_timestamp_basic(ctx, actor_id, PlayerActionType::Terraform, request.timestamp)?;
     if !dry_run {
         // Make sure target and timestamp and action fit
         PlayerActionState::validate(

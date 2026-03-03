@@ -281,6 +281,9 @@ pub fn clear_staged_static_data(ctx: &ReducerContext) -> Result<(), String> {
     for r in ctx.db.staged_traveler_task_desc().iter() {
         ctx.db.staged_traveler_task_desc().delete(r);
     }
+    for r in ctx.db.staged_traveler_task_knowledge_requirement_desc().iter() {
+        ctx.db.staged_traveler_task_knowledge_requirement_desc().delete(r);
+    }
     for r in ctx.db.staged_traveler_trade_order_desc().iter() {
         ctx.db.staged_traveler_trade_order_desc().delete(r);
     }
@@ -1561,6 +1564,20 @@ pub fn stage_traveler_task_desc(ctx: &ReducerContext, records: Vec<TravelerTaskD
 }
 
 #[spacetimedb::reducer]
+pub fn stage_traveler_task_knowledge_requirement_desc(ctx: &ReducerContext, records: Vec<TravelerTaskKnowledgeRequirementDesc>) -> Result<(), String> {
+    if !has_role(ctx, &ctx.sender, Role::Admin) {
+        return Err("Invalid permissions".into());
+    }
+    for r in records {
+        if let Err(e) = ctx.db.staged_traveler_task_knowledge_requirement_desc().try_insert(r.clone()) {
+            spacetimedb::log::error!("Failed to stage record {:?}: {}", r, e);
+            return Err(e.to_string());
+        }
+    }
+    Ok(())
+}
+
+#[spacetimedb::reducer]
 pub fn stage_traveler_trade_order_desc(ctx: &ReducerContext, records: Vec<TravelerTradeOrderDesc>) -> Result<(), String> {
     if !has_role(ctx, &ctx.sender, Role::Admin) {
         return Err("Invalid permissions".into());
@@ -1900,6 +1917,9 @@ pub fn validate_staged_data(ctx: &ReducerContext) -> Result<(), String> {
     }
     if ctx.db.staged_traveler_task_desc().count() == 0 {
         return Err("Staged data for TravelerTaskDesc is empty, aborting.".into());
+    }
+    if ctx.db.staged_traveler_task_knowledge_requirement_desc().count() == 0 {
+        return Err("Staged data for TravelerTaskKnowledgeRequirementDesc is empty, aborting.".into());
     }
     if ctx.db.staged_traveler_trade_order_desc().count() == 0 {
         return Err("Staged data for TravelerTradeOrderDesc is empty, aborting.".into());

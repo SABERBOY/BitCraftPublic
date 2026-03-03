@@ -3091,10 +3091,12 @@ pub fn import_traveler_task_desc(ctx: &ReducerContext, records: Vec<TravelerTask
     import_traveler_task_desc_internal(ctx, records)?;
     Ok(())
 }
+
 fn import_traveler_task_desc_internal(ctx: &ReducerContext, records: Vec<TravelerTaskDesc>) -> Result<(), String> {
     for id in ctx.db.traveler_task_desc().iter().map(|item| item.id) {
         ctx.db.traveler_task_desc().id().delete(&id);
     }
+
     let len: usize = records.len();
     log::info!("Will insert {} records of type TravelerTaskDesc", len);
     for record in records {
@@ -3106,6 +3108,40 @@ fn import_traveler_task_desc_internal(ctx: &ReducerContext, records: Vec<Travele
         }
     }
     log::info!("Inserted {} records of type TravelerTaskDesc", len);
+    Ok(())
+}
+
+#[spacetimedb::reducer]
+pub fn import_traveler_task_knowledge_requirement_desc(
+    ctx: &ReducerContext,
+    records: Vec<TravelerTaskKnowledgeRequirementDesc>,
+) -> Result<(), String> {
+    if !has_role(ctx, &ctx.sender, Role::Admin) {
+        return Err("Invalid permissions".into());
+    }
+    import_traveler_task_knowledge_requirement_desc_internal(ctx, records)?;
+    Ok(())
+}
+
+fn import_traveler_task_knowledge_requirement_desc_internal(
+    ctx: &ReducerContext,
+    records: Vec<TravelerTaskKnowledgeRequirementDesc>,
+) -> Result<(), String> {
+    for id in ctx.db.traveler_task_knowledge_requirement_desc().iter().map(|item| item.traveler_task_id) {
+        ctx.db.traveler_task_knowledge_requirement_desc().traveler_task_id().delete(&id);
+    }
+
+    let len: usize = records.len();
+    log::info!("Will insert {} records of type TravelerTaskKnowledgeRequirementDesc", len);
+    for record in records {
+        let task_id = record.traveler_task_id;
+        if let Err(err) = ctx.db.traveler_task_knowledge_requirement_desc().try_insert(record) {
+            return Err(format!(
+                "Couldn't insert TravelerTaskKnowledgeRequirementDesc record with traveler_task_id {task_id}. Error message: {err}"
+            ));
+        }
+    }
+    log::info!("Inserted {} records of type TravelerTaskKnowledgeRequirementDesc", len);
     Ok(())
 }
 
@@ -4061,6 +4097,7 @@ pub fn commit_staged_static_data(ctx: &ReducerContext) -> Result<(), String> {
     import_teleport_item_desc_internal(ctx, collect_table(ctx.db.staged_teleport_item_desc()))?;
     import_tool_desc_internal(ctx, collect_table(ctx.db.staged_tool_desc()))?;
     import_traveler_task_desc_internal(ctx, collect_table(ctx.db.staged_traveler_task_desc()))?;
+    import_traveler_task_knowledge_requirement_desc_internal(ctx, collect_table(ctx.db.staged_traveler_task_knowledge_requirement_desc()))?;
     import_traveler_trade_order_desc_internal(ctx, collect_table(ctx.db.staged_traveler_trade_order_desc()))?;
     import_deployable_desc_internal(ctx, collect_table(ctx.db.staged_deployable_desc()))?;
     import_weapon_desc_internal(ctx, collect_table(ctx.db.staged_weapon_desc()))?;

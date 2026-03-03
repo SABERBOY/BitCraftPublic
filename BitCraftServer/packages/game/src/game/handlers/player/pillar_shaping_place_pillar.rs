@@ -103,7 +103,7 @@ fn reduce(
 
         for biome in ctx.db.biome_desc().disallow_player_build().filter(true) {
             if terrain_target.biome_percentage(Biome::to_enum(biome.biome_type)) > 0f32 {
-                return Err("Can't add pillar decoration close to a spawn area".into());
+                return Err("Can't add pillar decoration in this biome".into());
             }
         }
     } else {

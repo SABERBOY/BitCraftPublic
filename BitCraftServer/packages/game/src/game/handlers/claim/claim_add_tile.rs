@@ -60,7 +60,7 @@ fn reduce(ctx: &ReducerContext, actor_id: u64, claim_entity_id: u64, t: SmallHex
     );
     let terrain_cell = terrain_chunk.get_entity(&parent_large_tile.into());
     if terrain_cell.biome_percentage(Biome::SafeMeadows) > 0f32 {
-        return Err("Cannot claim land close to a spawn area".into());
+        return Err("Cannot claim land in this biome".into());
     }
 
     // Make sure the location is not within range of a different claim

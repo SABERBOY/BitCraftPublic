@@ -120,7 +120,7 @@ pub fn reduce(ctx: &ReducerContext, actor_id: u64, from_pocket: &PocketKey, to_p
 
     // only allow the right item ids in wallet
     if to_inventory.inventory_index == 2 {
-        if let Some(wallet_pocket) = InventoryState::wallet_pocket_target(ctx, &from_contents) {
+        if let Some(wallet_pocket) = to_inventory.wallet_pocket_target(ctx, &from_contents) {
             if wallet_pocket != to_index {
                 return Err("Not allowed in that wallet slot".into());
             }
@@ -131,7 +131,7 @@ pub fn reduce(ctx: &ReducerContext, actor_id: u64, from_pocket: &PocketKey, to_p
 
     // only allow swapping back the right item id in the right wallet pocket
     if from_inventory.inventory_index == 2 && !to_empty {
-        if let Some(wallet_pocket) = InventoryState::wallet_pocket_target(ctx, &to_pocket.contents.unwrap()) {
+        if let Some(wallet_pocket) = from_inventory.wallet_pocket_target(ctx, &to_pocket.contents.unwrap()) {
             if wallet_pocket != from_pocket.pocket_index as usize {
                 return Err("Not allowed in that wallet slot".into());
             }

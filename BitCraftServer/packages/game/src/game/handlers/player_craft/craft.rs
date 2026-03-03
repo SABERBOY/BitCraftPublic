@@ -224,6 +224,7 @@ pub fn reduce(
 ) -> Result<(), String> {
     HealthState::check_incapacitated(ctx, actor_id, true)?;
 
+    PlayerActionState::validate_timestamp_basic(ctx, actor_id, PlayerActionType::Craft, timestamp)?;
     if !dry_run {
         // Make sure target and timestamp and action fit
         PlayerActionState::validate(ctx, actor_id, PlayerActionType::Craft, Some(building_entity_id))?;
@@ -366,22 +367,24 @@ pub fn reduce(
         };
     }
 
-    // Limit to 1 lock per building per player if not a member of the claim
-    if building.claim_entity_id != 0 {
-        if ProgressiveActionState::get_active_locks_on_building(ctx, actor_id, building.entity_id)
-            .any(|action| action.entity_id != progressive_action.entity_id)
-        {
-            if let Some(claim) = ctx.db.claim_state().entity_id().find(&building.claim_entity_id) {
-                if claim.owner_player_entity_id != 0 {
-                    if !claim.get_member(ctx, actor_id).is_some() {
-                        return Err("Non claim members can only have 1 ongoing craft per building".into());
+    // Limit to 1 lock per building per player if not a member of the claim, but only when working on our own craft
+    if progressive_action.owner_entity_id == actor_id {
+        if building.claim_entity_id != 0 {
+            if ProgressiveActionState::get_active_locks_on_building(ctx, actor_id, building.entity_id)
+                .any(|action| action.entity_id != progressive_action.entity_id)
+            {
+                if let Some(claim) = ctx.db.claim_state().entity_id().find(&building.claim_entity_id) {
+                    if claim.owner_player_entity_id != 0 {
+                        if !claim.get_member(ctx, actor_id).is_some() {
+                            return Err("Non claim members can only have 1 ongoing craft per building".into());
+                        }
+                    } else {
+                        // If there is no owner, this must be a neutral claim
+                        return Err("You can only have 1 ongoing craft per shared building".into());
                     }
                 } else {
-                    // If there is no owner, this must be a neutral claim
-                    return Err("You can only have 1 ongoing craft per shared building".into());
+                    return Err("Invalid claim".into());
                 }
-            } else {
-                return Err("Invalid claim".into());
             }
         }
     }

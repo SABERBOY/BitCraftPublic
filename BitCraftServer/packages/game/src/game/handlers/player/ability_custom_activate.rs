@@ -62,6 +62,7 @@ pub fn reduce(
     AbilityUnlockDesc::evaluate(ctx, actor_id, AbilityTypeEnum::Custom, ability_data)?;
 
     // Validate timestamps
+    PlayerActionState::validate_timestamp_basic(ctx, actor_id, PlayerActionType::AbilityCustom, timestamp)?;
     if !dry_run && custom_effect.cast_time > 0.0 {
         // Make sure target and timestamp and action fit
         PlayerActionState::validate(ctx, actor_id, PlayerActionType::AbilityCustom, Some(target_entity_id))?;

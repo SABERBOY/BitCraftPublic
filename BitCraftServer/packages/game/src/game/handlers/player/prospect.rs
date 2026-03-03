@@ -9,8 +9,15 @@ use crate::{
     messages::static_data::*,
     unwrap_or_err,
 };
-use spacetimedb::{log, ReducerContext, Table};
+use spacetimedb::{ReducerContext, Table};
 use std::time::Duration;
+
+const LOGGING: bool = false;
+
+#[macro_export]
+macro_rules! log {
+    ($($arg:tt)+) => (if LOGGING { spacetimedb::log::info!($($arg)+); })
+}
 
 #[spacetimedb::reducer]
 pub fn prospect_start(ctx: &ReducerContext, prospecting_id: i32, timestamp: u64) -> Result<(), String> {
@@ -140,10 +147,10 @@ fn reduce(
 
     let player_location = location.to_location_state().coordinates();
 
-    log::info!("**********************************************");
-    log::info!("*");
+    log!("**********************************************");
+    log!("*");
     if is_initial_prospecting {
-        log::info!("* INITIATING NEW PROSPECTING");
+        log!("* INITIATING NEW PROSPECTING");
 
         // Try finding existing ongoing crumb trails around
         // Note: not filtering by chunk indexes or anything for those reasons:
@@ -189,7 +196,7 @@ fn reduce(
                 next_crumb_angle: Vec::new(), // this will be updated below
                 contribution: 0,
             });
-            log::info!("* Joining existing CrumbTrail {}", trail.entity_id);
+            log!("* Joining existing CrumbTrail {}", trail.entity_id);
         } else {
             if let Some(new_trail) = CrumbTrailState::create(ctx, player_location, prospecting_id) {
                 player_prospecting = Some(ProspectingState {
@@ -209,7 +216,7 @@ fn reduce(
                 return Ok(());
             }
         }
-        log::info!("*");
+        log!("*");
     }
 
     let mut player_prospecting = player_prospecting.unwrap();
@@ -234,27 +241,27 @@ fn reduce(
 
     let is_heading_torwards_reward = step >= crumb_trail.crumb_radiuses.len();
 
-    log::info!("* PROSPECTING RESULT");
-    log::info!("* Step # {} / {}", step, crumb_trail.crumb_radiuses.len());
+    log!("* PROSPECTING RESULT");
+    log!("* Step # {} / {}", step, crumb_trail.crumb_radiuses.len());
     if is_heading_torwards_reward {
-        log::info!("* Target Location: {:?}", target_location,);
+        log!("* Target Location: {:?}", target_location,);
     } else {
-        log::info!(
+        log!(
             "* Target Location: {:?} Radius: {}",
             target_location,
             crumb_trail.crumb_radiuses[step]
         );
     }
-    log::info!("* Player Location: {:?}", player_location);
-    log::info!("* Distance: {:?}", target_location.distance_to(player_location));
+    log!("* Player Location: {:?}", player_location);
+    log!("* Distance: {:?}", target_location.distance_to(player_location));
     if !is_heading_torwards_reward {
-        log::info!(
+        log!(
             "* Success => {}",
             target_location.distance_to(player_location) < crumb_trail.crumb_radiuses[step]
         );
     }
-    log::info!("*");
-    log::info!("**********************************************");
+    log!("*");
+    log!("**********************************************");
 
     let mut updated_trail = false;
     if !is_heading_torwards_reward {
@@ -264,11 +271,11 @@ fn reduce(
                 if crumb_trail.active_step as usize == crumb_trail.crumb_locations.len() {
                     if prospecting_desc.enemy_ai_desc_id != 0 {
                         // Spawn Herd
-                        log::info!("* Spawning Prize Herd");
+                        log!("* Spawning Prize Herd");
                         crumb_trail.spawn_herd_prize(ctx, &prospecting_desc);
                     } else {
                         // Spawn final clump
-                        log::info!("* Replacing placeholder prize resource by official version");
+                        log!("* Replacing placeholder prize resource by official version");
                         crumb_trail.replace_prize_resources(ctx, &prospecting_desc);
                     }
                 }

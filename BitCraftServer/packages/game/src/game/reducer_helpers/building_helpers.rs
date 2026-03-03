@@ -264,11 +264,11 @@ pub fn create_building_claim(ctx: &ReducerContext, building_entity_id: u64, neut
 
             //set claim name
             let coord_large = coordinates.parent_large_tile().to_offset_coordinates();
-            let mut name = format!("Claimed area (N: {{0}}, E: {{1}})|~{}|~{}", coord_large.z, coord_large.x);
+            let mut name = format!("Claimed area (N: {}, E: {})", coord_large.z, coord_large.x);
             if neutral_claim_type {
                 let building_desc_option = ctx.db.building_desc().id().find(&building_state.building_description_id);
                 if let Some(building_desc) = building_desc_option {
-                    name = format!("{{0}} (N: {{1}}, E: {{2}})|~{}|~{}|~{}", building_desc.name, coord_large.z, coord_large.x);
+                    name = format!("{} (N: {}, E: {})", building_desc.name, coord_large.z, coord_large.x);
                 }
             }
 

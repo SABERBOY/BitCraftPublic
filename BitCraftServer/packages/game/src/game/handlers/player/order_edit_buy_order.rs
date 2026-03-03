@@ -102,6 +102,9 @@ pub fn order_edit_buy_order(ctx: &ReducerContext, request: PlayerEditOrderReques
                 timestamp: ctx.timestamp,
             };
             ctx.db.closed_listing_state().insert(refunded_coins);
+            // Savings have been paid out; remove them from stored_coins so a
+            // subsequent cancel cannot refund them a second time.
+            buy_order.stored_coins = buy_order.stored_coins.checked_sub(savings).unwrap();
         }
     }
 

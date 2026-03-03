@@ -5,8 +5,10 @@ use spacetimedb::{log, rand::Rng, ReducerContext, Table};
 use crate::{
     game::game_state,
     messages::{
-        components::{experience_state, player_state, traveler_task_state, TravelerTaskState},
-        static_data::{npc_desc, traveler_task_desc, TravelerTaskDesc},
+        components::{experience_state, knowledge_secondary_state, player_state, traveler_task_state, TravelerTaskState},
+        static_data::{
+            npc_desc, traveler_task_desc, traveler_task_knowledge_requirement_desc, TravelerTaskDesc, TravelerTaskKnowledgeRequirementDesc,
+        },
     },
 };
 
@@ -52,6 +54,14 @@ impl TravelerTaskState {
         player.traveler_tasks_expiration = next_traveler_task_refresh;
         ctx.db.player_state().entity_id().update(player);
 
+        let player_knowledges = ctx.db.knowledge_secondary_state().entity_id().find(player_entity_id).unwrap();
+        let knowledge_requirements: HashMap<i32, TravelerTaskKnowledgeRequirementDesc> = ctx
+            .db
+            .traveler_task_knowledge_requirement_desc()
+            .iter()
+            .map(|requirements| (requirements.traveler_task_id, requirements))
+            .collect();
+
         let experience = ctx.db.experience_state().entity_id().find(player_entity_id).unwrap();
         for traveler_id in requests.keys() {
             if requests[traveler_id].len() == 0 {
@@ -62,6 +72,26 @@ impl TravelerTaskState {
                 .filter(|t| {
                     let level = experience.get_level(t.level_requirement.skill_id);
                     level >= t.level_requirement.min_level && level <= t.level_requirement.max_level
+                })
+                .filter(|t| match knowledge_requirements.get(&t.id) {
+                    Some(requirements) => {
+                        requirements.required_knowledges.is_empty()
+                            || requirements
+                                .required_knowledges
+                                .iter()
+                                .all(|knowledge_id| player_knowledges.is_acquired(*knowledge_id))
+                    }
+                    None => true,
+                })
+                .filter(|t| match knowledge_requirements.get(&t.id) {
+                    Some(requirements) => {
+                        requirements.blocking_knowledges.is_empty()
+                            || !requirements
+                                .blocking_knowledges
+                                .iter()
+                                .any(|knowledge_id| player_knowledges.is_acquired(*knowledge_id))
+                    }
+                    None => true,
                 })
                 .map(|t| t.id)
                 .collect();

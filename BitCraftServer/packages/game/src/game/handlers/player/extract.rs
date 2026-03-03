@@ -92,6 +92,7 @@ fn reduce(
 ) -> Result<(), String> {
     HealthState::check_incapacitated(ctx, actor_id, true)?;
 
+    PlayerActionState::validate_timestamp_basic(ctx, actor_id, PlayerActionType::Extract, request.timestamp)?;
     if !dry_run {
         // Make sure target and timestamp and action fit
         PlayerActionState::validate(ctx, actor_id, PlayerActionType::Extract, Some(request.target_entity_id))?;

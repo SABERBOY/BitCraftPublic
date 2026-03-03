@@ -204,7 +204,7 @@ impl ProjectSiteState {
             );
 
             if terrain_target.biome_percentage(Biome::to_enum(biome.biome_type)) > 0f32 {
-                return Err("Can't build close to a spawn area".into());
+                return Err("Can't build in this biome".into());
             }
         }
 

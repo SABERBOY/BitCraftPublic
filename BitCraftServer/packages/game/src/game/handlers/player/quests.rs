@@ -37,6 +37,10 @@ pub fn complete_quest_chain(ctx: &ReducerContext, id: i32) -> Result<(), String>
     if !quest_chain_desc.is_hint && quest_chain_state.stage_id != -1 && !is_onboarding {
         return Err("Cannot complete quest. Not on hand-in stage.".into());
     }
+    
+    if quest_chain_state.completed {
+        return Err("This quest is already completed".into());
+    }
 
     quest_chain_state.tracked = false;
     quest_chain_state.completed = true;

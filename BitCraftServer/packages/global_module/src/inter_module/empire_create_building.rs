@@ -48,7 +48,7 @@ pub fn process_message_on_destination(ctx: &ReducerContext, request: EmpireCreat
                 .unwrap();
             let mut empire = ctx.db.empire_state().entity_id().find(&player_data.empire_entity_id).unwrap();
             if empire.empire_currency_treasury < construction_recipe.consumed_shards as u32 {
-                return Err("Not enough in the empire treasury".into());
+                return Err("Your empire does not have enough hexite energy".into());
             }
             empire.empire_currency_treasury -= construction_recipe.consumed_shards as u32;
             EmpireState::update_shared(ctx, empire, super::InterModuleDestination::AllOtherRegions);
