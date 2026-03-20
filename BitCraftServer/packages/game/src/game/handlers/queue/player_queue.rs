@@ -1,3 +1,4 @@
+use bitcraft_macro::feature_gate;
 use spacetimedb::{ReducerContext, Table};
 
 use crate::{
@@ -14,6 +15,7 @@ use crate::{
 use super::end_grace_period::{end_grace_period_timer, EndGracePeriodTimer, GracePeriodType};
 
 #[spacetimedb::reducer]
+#[feature_gate]
 pub fn player_queue_join(ctx: &ReducerContext) -> Result<(), String> {
     let user_state = unwrap_or_err!(
         ctx.db.user_state().identity().find(ctx.sender),
@@ -62,6 +64,7 @@ pub fn player_queue_join(ctx: &ReducerContext) -> Result<(), String> {
 }
 
 #[spacetimedb::reducer]
+#[feature_gate]
 pub fn player_queue_leave(ctx: &ReducerContext) -> Result<(), String> {
     if let Some(user_state) = ctx.db.user_state().identity().find(&ctx.sender) {
         dequeue(ctx, user_state.entity_id);

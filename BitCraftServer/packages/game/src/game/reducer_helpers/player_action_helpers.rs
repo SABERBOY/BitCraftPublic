@@ -11,55 +11,6 @@ use crate::messages::static_data::BuffCategory;
 use crate::{cargo_desc, player_action_desc, unwrap_or_err, BuffDesc};
 use spacetimedb::{log, ReducerContext};
 
-pub fn roll_crit_outcome(player_skill_level: i32, action_skill_requirement: i32) -> f32 {
-    if player_skill_level < action_skill_requirement {
-        0.0
-    } else {
-        1.0
-    }
-    /*
-    let crit_chance_rate = get_yield(player_skill_level, action_skill_requirement);
-    let roll = ctx.rng().gen_range(0.0..1.0);
-    let guaranteed_hit = crit_chance_rate >= 1.0;
-    let crit_bonus_damage: f32 = 0.15; // TODO: Add this to Parameters.csv rather than hard-coding it.
-    let roll_success_bonus: f32 = if guaranteed_hit { crit_bonus_damage } else { 1.0 };
-    let crit_outcome = f32::trunc(crit_chance_rate) + if roll < (crit_chance_rate % 1.0) { roll_success_bonus } else { 0.0 };
-    return crit_outcome;
-
-    fn get_yield(player_level: i32, action_skill_requirement: i32) -> f32 {
-        // should be between range [-98, 98]
-        let skill_delta = player_level - action_skill_requirement;
-        let bound = ExperienceStack::MAX_LEVEL - 1;
-        if skill_delta < -bound || skill_delta > bound {
-            panic!(
-                "Delta out of bound [-{},{}]. PlayerSkill ${} - DesiredSkill: ${}",
-                bound, bound, player_level, action_skill_requirement
-            );
-        }
-        return calculate_yield(skill_delta as f32);
-    }
-
-    fn calculate_yield(skill_delta: f32) -> f32 {
-        let log_f = f32::ln(ctx.db.parameters_desc().version().find(&0).unwrap().skill_yield_log_base);
-        let modified_skill_delta = 1.0 + (skill_delta / 100.0);
-        let yield_rate = if skill_delta < 0.0 {
-            f32::powf(
-                modified_skill_delta,
-                ctx.db.parameters_desc().version().find(&0).unwrap().skill_yield_power_exponent,
-            )
-        } else {
-            f32::ln(modified_skill_delta) / log_f + 1.0
-        };
-
-        if yield_rate >= ctx.db.parameters_desc().version().find(&0).unwrap().skill_yield_cutoff_percent {
-            yield_rate
-        } else {
-            0.0
-        }
-    }
-    */
-}
-
 pub fn validate_action_elevation(
     ctx: &ReducerContext,
     terrain_cache: &mut TerrainChunkCache,

@@ -1,3 +1,4 @@
+use bitcraft_macro::feature_gate;
 use crate::game::game_state;
 use crate::game::game_state::game_state_filters;
 use crate::game::reducer_helpers::cargo_helpers::spawn_cargo;
@@ -20,6 +21,7 @@ pub struct PlayerDeathTimer {
 }
 
 #[spacetimedb::reducer]
+#[feature_gate]
 fn player_death_start(ctx: &ReducerContext, timer: PlayerDeathTimer) -> Result<(), String> {
     ServerIdentity::validate_server_or_admin(&ctx)?;
 

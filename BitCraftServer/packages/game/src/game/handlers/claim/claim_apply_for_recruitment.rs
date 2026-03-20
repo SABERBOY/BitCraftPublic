@@ -1,3 +1,4 @@
+use bitcraft_macro::feature_gate;
 use bitcraft_macro::shared_table_reducer;
 use spacetimedb::ReducerContext;
 
@@ -11,6 +12,7 @@ use super::claim_add_member;
 
 #[spacetimedb::reducer]
 #[shared_table_reducer]
+#[feature_gate]
 pub fn claim_apply_for_recruitment(ctx: &ReducerContext, request: PlayerClaimApplyForRecruitmentRequest) -> Result<(), String> {
     let actor_id = game_state::actor_id(&ctx, true)?;
     PlayerTimestampState::refresh(ctx, actor_id, ctx.timestamp);

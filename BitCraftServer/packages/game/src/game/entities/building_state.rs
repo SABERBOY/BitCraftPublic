@@ -217,7 +217,7 @@ impl BuildingState {
         if building_desc.has_category(ctx, BuildingCategory::EmpireFoundry) {
             inter_module::send_inter_module_message(
                 ctx,
-                crate::messages::inter_module::MessageContents::EmpireCreateBuilding(EmpireCreateBuildingMsg {
+                crate::messages::inter_module::MessageContentsV2::EmpireCreateBuilding(EmpireCreateBuildingMsg {
                     player_entity_id,
                     building_entity_id,
                     location: location.into(),

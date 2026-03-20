@@ -1,3 +1,4 @@
+use bitcraft_macro::feature_gate;
 use std::time::Duration;
 
 use spacetimedb::ReducerContext;
@@ -11,6 +12,7 @@ use crate::{
 };
 
 #[spacetimedb::reducer]
+#[feature_gate]
 pub fn item_use_start(ctx: &ReducerContext, request: PlayerItemUseRequest) -> Result<(), String> {
     let actor_id = game_state::actor_id(&ctx, true)?;
     PlayerTimestampState::refresh(ctx, actor_id, ctx.timestamp);
@@ -28,6 +30,7 @@ pub fn item_use_start(ctx: &ReducerContext, request: PlayerItemUseRequest) -> Re
 }
 
 #[spacetimedb::reducer]
+#[feature_gate]
 pub fn item_use(ctx: &ReducerContext, request: PlayerItemUseRequest) -> Result<(), String> {
     let actor_id = game_state::actor_id(&ctx, true)?;
     PlayerTimestampState::refresh(ctx, actor_id, ctx.timestamp);

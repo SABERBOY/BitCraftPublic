@@ -1,8 +1,10 @@
+use bitcraft_macro::feature_gate;
 use spacetimedb::ReducerContext;
 
 use crate::{game::game_state, messages::action_request::PlayerPausePlayTimerRequest, player_state, unwrap_or_err};
 
 #[spacetimedb::reducer]
+#[feature_gate]
 pub fn pause_play_timer(ctx: &ReducerContext, request: PlayerPausePlayTimerRequest) -> Result<(), String> {
     let actor_id = game_state::actor_id(&ctx, true)?;
     let mut player = unwrap_or_err!(ctx.db.player_state().entity_id().find(&actor_id), "Invalid player");

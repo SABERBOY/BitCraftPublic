@@ -1,3 +1,4 @@
+use bitcraft_macro::feature_gate;
 use std::time::Duration;
 
 use spacetimedb::ReducerContext;
@@ -16,6 +17,7 @@ use crate::{
 };
 
 #[spacetimedb::reducer]
+#[feature_gate("empire")]
 pub fn empire_siege_depleted_watchtower(ctx: &ReducerContext, request: EmpireStartSiegeRequest) -> Result<(), String> {
     let actor_id = game_state::actor_id(&ctx, true)?;
 
@@ -36,6 +38,7 @@ pub fn empire_siege_depleted_watchtower(ctx: &ReducerContext, request: EmpireSta
 }
 
 #[spacetimedb::reducer]
+#[feature_gate("empire")]
 pub fn empire_deploy_siege_engine_start(ctx: &ReducerContext, request: EmpireStartSiegeRequest) -> Result<(), String> {
     let actor_id = game_state::actor_id(&ctx, true)?;
 
@@ -58,6 +61,7 @@ pub fn empire_deploy_siege_engine_start(ctx: &ReducerContext, request: EmpireSta
 }
 
 #[spacetimedb::reducer]
+#[feature_gate("empire")]
 pub fn empire_deploy_siege_engine(ctx: &ReducerContext, request: EmpireStartSiegeRequest) -> Result<(), String> {
     let actor_id = game_state::actor_id(&ctx, true)?;
 
@@ -143,7 +147,7 @@ pub fn send_message(
 ) {
     send_inter_module_message(
         ctx,
-        crate::messages::inter_module::MessageContents::EmpireStartSiege(EmpireStartSiegeMsg {
+        crate::messages::inter_module::MessageContentsV2::EmpireStartSiege(EmpireStartSiegeMsg {
             building_coord: game_state_filters::coordinates(ctx, building_entity_id).into(),
             player_entity_id,
             building_entity_id,

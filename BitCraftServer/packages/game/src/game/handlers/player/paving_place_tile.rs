@@ -1,3 +1,4 @@
+use bitcraft_macro::feature_gate;
 use crate::game::reducer_helpers::player_action_helpers;
 use crate::game::terrain_chunk::TerrainChunkCache;
 use crate::game::{claim_helper, dimensions};
@@ -17,6 +18,7 @@ use spacetimedb::{ReducerContext, Table};
 use std::time::Duration;
 
 #[spacetimedb::reducer]
+#[feature_gate]
 pub fn paving_place_tile_start(ctx: &ReducerContext, request: PlayerPavingPlaceTileRequest) -> Result<(), String> {
     let actor_id = game_state::actor_id(&ctx, true)?;
     PlayerTimestampState::refresh(ctx, actor_id, ctx.timestamp);
@@ -37,6 +39,7 @@ pub fn paving_place_tile_start(ctx: &ReducerContext, request: PlayerPavingPlaceT
 }
 
 #[spacetimedb::reducer]
+#[feature_gate]
 pub fn paving_place_tile(ctx: &ReducerContext, request: PlayerPavingPlaceTileRequest) -> Result<(), String> {
     let actor_id = game_state::actor_id(&ctx, true)?;
     PlayerTimestampState::refresh(ctx, actor_id, ctx.timestamp);

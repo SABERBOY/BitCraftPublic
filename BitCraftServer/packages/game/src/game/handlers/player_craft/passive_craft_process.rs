@@ -1,3 +1,4 @@
+use bitcraft_macro::feature_gate;
 use spacetimedb::ReducerContext;
 
 use crate::{
@@ -16,6 +17,7 @@ pub struct PassiveCraftTimer {
 }
 
 #[spacetimedb::reducer]
+#[feature_gate("craft")]
 pub fn passive_craft_process(ctx: &ReducerContext, timer: PassiveCraftTimer) -> Result<(), String> {
     if !has_role(ctx, &ctx.sender, Role::Admin) {
         return Err("Invalid permissions".into());

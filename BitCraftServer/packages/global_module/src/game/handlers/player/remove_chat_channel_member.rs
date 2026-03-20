@@ -1,3 +1,4 @@
+use bitcraft_macro::feature_gate;
 use spacetimedb::{ReducerContext};
 
 use crate::{
@@ -7,6 +8,7 @@ use crate::{
 };
 
 #[spacetimedb::reducer]
+#[feature_gate]
 pub fn remove_chat_channel_member(ctx: &ReducerContext, channel_entity_id: u64, player_entity_id: u64) -> Result<(), String> {
     unwrap_or_err!(ctx.db.chat_channel_state().entity_id().find(&channel_entity_id), "Invalid chat channel");
 

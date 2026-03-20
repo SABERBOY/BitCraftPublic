@@ -1,3 +1,4 @@
+use bitcraft_macro::feature_gate;
 use spacetimedb::{log, ReducerContext, Table};
 
 use crate::{
@@ -15,6 +16,7 @@ use crate::{
 };
 
 #[spacetimedb::reducer]
+#[feature_gate]
 pub fn sign_in(ctx: &ReducerContext, _request: PlayerSignInRequest) -> Result<(), String> {
     let actor_id = game_state::actor_id(&ctx, false)?;
 
@@ -44,6 +46,7 @@ pub fn sign_in(ctx: &ReducerContext, _request: PlayerSignInRequest) -> Result<()
 
 // Called everytime a new client connects
 #[spacetimedb::reducer(client_connected)]
+#[feature_gate]
 pub fn identity_connected(ctx: &ReducerContext) -> Result<(), String> {
     if let Some(developer) = ctx.db.developer().identity().find(ctx.sender) {
         log::info!(

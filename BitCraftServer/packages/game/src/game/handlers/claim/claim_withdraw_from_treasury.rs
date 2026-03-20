@@ -1,3 +1,4 @@
+use bitcraft_macro::feature_gate;
 use spacetimedb::ReducerContext;
 
 use crate::{
@@ -7,6 +8,7 @@ use crate::{
 };
 
 #[spacetimedb::reducer]
+#[feature_gate]
 pub fn claim_withdraw_from_treasury(ctx: &ReducerContext, request: PlayerClaimWithdrawFromTreasuryRequest) -> Result<(), String> {
     let actor_id = game_state::actor_id(&ctx, true)?;
     PlayerTimestampState::refresh(ctx, actor_id, ctx.timestamp);

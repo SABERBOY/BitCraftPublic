@@ -8,8 +8,8 @@ use crate::{
     messages::{
         authentication::{Role, ServerIdentity},
         components::{
-            crumb_trail_contribution_spent_state, crumb_trail_state, herd_state, prospecting_state, resource_state, signed_in_player_state,
-            ResourceState,
+            crumb_trail_contribution_lock_state, crumb_trail_contribution_spent_state, crumb_trail_state, prospecting_state,
+            resource_state, signed_in_player_state, CrumbTrailState, ResourceState,
         },
     },
 };
@@ -89,23 +89,7 @@ fn crumb_tail_cleanup_agent_loop(ctx: &ReducerContext, _timer: CrumbTrailCleanup
         } else {
             crumb_trail.clean_up_counter += 1;
             if crumb_trail.clean_up_counter >= 3 {
-                // despawn prizes
-                for prize in crumb_trail.prize_entity_ids {
-                    if let Some(resource) = ctx.db.resource_state().entity_id().find(prize) {
-                        ResourceState::despawn(ctx, prize, resource.resource_id);
-                    } else {
-                        if let Some(_herd) = ctx.db.herd_state().entity_id().find(prize) {
-                            // despawn herd
-                            delete_entity(ctx, prize);
-                        }
-                    }
-                }
-                ctx.db.prospecting_state().crumb_trail_entity_id().delete(crumb_trail.entity_id);
-                ctx.db
-                    .crumb_trail_contribution_spent_state()
-                    .crumb_trail_entity_id()
-                    .delete(crumb_trail.entity_id);
-                ctx.db.crumb_trail_state().entity_id().delete(crumb_trail.entity_id);
+                delete_crumb_trail(ctx, &crumb_trail);
                 count += 1;
             } else {
                 ctx.db.crumb_trail_state().entity_id().update(crumb_trail);
@@ -113,5 +97,31 @@ fn crumb_tail_cleanup_agent_loop(ctx: &ReducerContext, _timer: CrumbTrailCleanup
         }
     }
 
-    log::info!("CrumbTrail Cleanup Agent deleted {count} trails");
+    if count > 0 {
+        log::info!("CrumbTrail Cleanup Agent deleted {count} trails");
+    }
+}
+
+pub fn delete_crumb_trail(ctx: &ReducerContext, crumb_trail: &CrumbTrailState) {
+    // despawn prizes
+    for prize in &crumb_trail.prize_entity_ids {
+        if let Some(resource) = ctx.db.resource_state().entity_id().find(prize) {
+            ResourceState::despawn(ctx, *prize, resource.resource_id);
+        } else {
+            // despawn herd... or non-resource prize entity
+            delete_entity(ctx, *prize);
+        }
+    }
+    ctx.db.prospecting_state().crumb_trail_entity_id().delete(crumb_trail.entity_id);
+    ctx.db
+        .crumb_trail_contribution_spent_state()
+        .crumb_trail_entity_id()
+        .delete(crumb_trail.entity_id);
+
+    ctx.db
+        .crumb_trail_contribution_lock_state()
+        .crumb_trail_entity_id()
+        .delete(crumb_trail.entity_id);
+
+    ctx.db.crumb_trail_state().entity_id().delete(crumb_trail.entity_id);
 }

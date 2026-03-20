@@ -1,8 +1,10 @@
+use bitcraft_macro::feature_gate;
 use spacetimedb::{ReducerContext, Table};
 
 use crate::{game::game_state, messages::components::*, unwrap_or_err};
 
 #[spacetimedb::reducer]
+#[feature_gate]
 pub fn claim_set_protection_threshold(ctx: &ReducerContext, building_entity_id: u64, hours: u32) -> Result<(), String> {
     let actor_id = game_state::actor_id(&ctx, true)?;
     PlayerTimestampState::refresh(ctx, actor_id, ctx.timestamp);

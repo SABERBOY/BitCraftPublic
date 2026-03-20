@@ -2,7 +2,7 @@ use spacetimedb::ReducerContext;
 
 use crate::messages::{
     global::user_region_state,
-    inter_module::{MessageContents, PlayerCreateMsg},
+    inter_module::{MessageContentsV2, PlayerCreateMsg},
 };
 
 use super::send_inter_module_message;
@@ -12,7 +12,7 @@ pub fn send_message(ctx: &ReducerContext, region_id: u8) -> Result<(), String> {
 
     send_inter_module_message(
         ctx,
-        MessageContents::PlayerCreateRequest(msg),
+        MessageContentsV2::PlayerCreateRequest(msg),
         super::InterModuleDestination::Region(region_id),
     );
 

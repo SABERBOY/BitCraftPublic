@@ -19,10 +19,10 @@ pub fn process_message_on_destination(ctx: &ReducerContext, request: EmpireStart
             return Err("This watchtower still has supplies".into());
         }
     } else {
-        ctx.db.empire_siege_engine_state().insert(EmpireSiegeEngineState {
+        ctx.db.empire_siege_engine_state().try_insert(EmpireSiegeEngineState {
             entity_id: request.deployable_entity_id,
             building_entity_id: request.building_entity_id,
-        });
+        })?;
     }
 
     return EmpireNodeSiegeState::start_siege(

@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use spacetimedb::ReducerContext;
 
-use crate::messages::components::EquipmentState;
+use crate::messages::components::{equipment_preset_state, EquipmentState};
 use crate::messages::static_data::*;
 use crate::InventoryState;
 
@@ -10,10 +10,32 @@ impl EquipmentState {
     pub fn collect_stats(&self, ctx: &ReducerContext, bonuses: &mut HashMap<CharacterStatType, (f32, f32)>) {
         let mut equipped_item_ids = Vec::new();
 
+        let active_preset = ctx
+            .db
+            .equipment_preset_state()
+            .player_entity_id()
+            .filter(self.entity_id)
+            .find(|preset| preset.active);
+        let using_active_preset = active_preset.is_some();
+
+        let equipment_slots = if active_preset.is_some() {
+            &active_preset.unwrap().equipment_slots
+        } else {
+            &self.equipment_slots
+        };
+
         // collect item ids from equipped gear (extra check to avoid doubling equipment taking 2 slots, although this is no longer used outside character customization)
-        for i in 0..self.equipment_slots.len() {
-            let equipment_slot = &self.equipment_slots[i];
+        for i in 0..equipment_slots.len() {
+            let equipment_slot = &equipment_slots[i];
             if equipment_slot.item_id() > 0 && equipment_slot.primary as usize == i {
+                equipped_item_ids.push(equipment_slot.item_id());
+            }
+        }
+
+        // if using an equipment preset stats, we still need to collect the heart stats from the main equipment
+        if using_active_preset {
+            let equipment_slot = &self.equipment_slots[EquipmentSlotType::HeadArtifact as usize];
+            if equipment_slot.item_id() > 0 {
                 equipped_item_ids.push(equipment_slot.item_id());
             }
         }

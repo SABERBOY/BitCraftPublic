@@ -1,3 +1,4 @@
+use bitcraft_macro::feature_gate;
 use spacetimedb::ReducerContext;
 
 use crate::{
@@ -13,6 +14,7 @@ use crate::{
 // This reducer handles storing a deployable for an error case where the deployable is
 // active in the vault but the deployable collectible state is missing or has no location.
 #[spacetimedb::reducer]
+#[feature_gate]
 pub fn deployable_store_from_collectible_id(ctx: &ReducerContext, collectible_id: i32) -> Result<(), String> {
     let actor_id = game_state::actor_id(&ctx, true)?;
 
@@ -55,7 +57,7 @@ pub fn deployable_store_from_collectible_id(ctx: &ReducerContext, collectible_id
     //We don't know which region the deployable is on, so we just blast messages to all regions and see if one of them succeeds
     send_inter_module_message(
         ctx,
-        crate::messages::inter_module::MessageContents::RecoverDeployable(crate::messages::inter_module::RecoverDeployableMsg {
+        crate::messages::inter_module::MessageContentsV2::RecoverDeployable(crate::messages::inter_module::RecoverDeployableMsg {
             player_entity_id: actor_id,
             deployable_entity_id: 0,
             deployable_desc_id: collectible_id,

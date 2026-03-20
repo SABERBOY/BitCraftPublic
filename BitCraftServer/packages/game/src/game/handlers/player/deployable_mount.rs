@@ -1,3 +1,4 @@
+use bitcraft_macro::feature_gate;
 use spacetimedb::{ReducerContext, Table};
 
 use crate::game::game_state::{self, game_state_filters};
@@ -8,6 +9,7 @@ use crate::messages::components::*;
 use crate::{deployable_desc, unwrap_or_err, MovementType};
 
 #[spacetimedb::reducer]
+#[feature_gate]
 pub fn deployable_mount(ctx: &ReducerContext, request: PlayerDeployableMountRequest) -> Result<(), String> {
     let actor_id = game_state::actor_id(&ctx, true)?;
     HealthState::check_incapacitated(ctx, actor_id, true)?;

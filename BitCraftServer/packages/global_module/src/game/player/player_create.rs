@@ -1,6 +1,8 @@
 use crate::{
+    game::handlers::authentication::has_role,
     inter_module::player_create::send_message,
     messages::{
+        authentication::Role,
         generic::{region_control_info, region_population_info, region_sign_in_parameters, world_region_state},
         global::{user_creation_timestamp_state, user_region_state, UserCreationTimestampState, UserRegionState},
     },
@@ -42,13 +44,16 @@ fn get_best_region_for_new_player(ctx: &ReducerContext) -> Result<u8, String> {
     let center = (region_count_sqrt / 2, region_count_sqrt / 2);
     let mut candidates: Vec<RegionInfo> = vec![];
 
+    // check if account is gm
+    let is_gm = has_role(ctx, &ctx.sender, Role::Gm);
+
     for id in 1..=region_count {
         let region_sign_in_parameters = unwrap_or_err!(
             ctx.db.region_sign_in_parameters().region_id().find(id),
             "Failed to get RegionSignInParameters"
         );
 
-        if region_sign_in_parameters.is_signing_in_blocked {
+        if region_sign_in_parameters.is_signing_in_blocked && !is_gm {
             continue;
         }
 

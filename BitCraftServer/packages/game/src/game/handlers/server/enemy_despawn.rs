@@ -1,13 +1,15 @@
 use spacetimedb::ReducerContext;
 
 use crate::{
-    action_state, enemy_state,
+    action_state,
+    agents::crumb_trail_clean_up_agent,
+    enemy_state,
     game::{autogen::_delete_entity::delete_entity, reducer_helpers::player_action_helpers::post_reducer_update_cargo},
     herd_state,
     messages::{
         action_request::EnemySpawnLootRequest,
         authentication::ServerIdentity,
-        components::{ability_state, ContributionState, InventoryState},
+        components::{ability_state, crumb_trail_contribution_lock_state, crumb_trail_state, ContributionState, InventoryState},
         static_data::enemy_desc,
     },
     ThreatState,
@@ -94,6 +96,19 @@ pub fn reduce(ctx: &ReducerContext, entity_id: u64) {
         if ContributionState::applies(ctx, entity_id) {
             ContributionState::roll_all(ctx, entity_id);
             ContributionState::clear(ctx, entity_id);
+        }
+
+        if let Some(prospecting_lock) = ctx.db.crumb_trail_contribution_lock_state().entity_id().find(enemy.entity_id) {
+            if ctx.db.enemy_state().herd_entity_id().filter(enemy.herd_entity_id).count() == 1 {
+                // This was the last enemy part of the prospecting herd. Immediately end herd prospecting.
+                let crumb_trail = ctx
+                    .db
+                    .crumb_trail_state()
+                    .entity_id()
+                    .find(prospecting_lock.crumb_trail_entity_id)
+                    .unwrap();
+                crumb_trail_clean_up_agent::delete_crumb_trail(ctx, &crumb_trail);
+            }
         }
 
         delete_entity(ctx, entity_id);

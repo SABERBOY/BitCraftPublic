@@ -1,3 +1,4 @@
+use bitcraft_macro::feature_gate;
 use crate::{
     game::game_state,
     messages::{components::deployable_collectible_state, static_data::deployable_desc},
@@ -6,6 +7,7 @@ use crate::{
 use spacetimedb::ReducerContext;
 
 #[spacetimedb::reducer]
+#[feature_gate]
 pub fn deployable_toggle_auto_follow(ctx: &ReducerContext, deployable_desc_id: i32) -> Result<(), String> {
     let actor_id = game_state::actor_id(&ctx, true)?;
 

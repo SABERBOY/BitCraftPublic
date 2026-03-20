@@ -1,3 +1,4 @@
+use bitcraft_macro::feature_gate;
 use spacetimedb::ReducerContext;
 
 use crate::{
@@ -8,6 +9,7 @@ use crate::{
 use super::inventory_helper;
 
 #[spacetimedb::reducer]
+#[feature_gate]
 pub fn inventory_create_personal(ctx: &ReducerContext, building_entity_id: u64) -> Result<(), String> {
     let actor_id = game_state::actor_id(&ctx, true)?;
 

@@ -1,3 +1,4 @@
+use bitcraft_macro::feature_gate;
 use spacetimedb::ReducerContext;
 
 use crate::{
@@ -8,6 +9,7 @@ use crate::{
 };
 
 #[spacetimedb::reducer]
+#[feature_gate]
 pub fn player_cancel_region_transfer(ctx: &ReducerContext) -> Result<(), String> {
     let actor_id = game_state::actor_id(&ctx, false)?;
     if ctx.db.player_queue_state().entity_id().find(actor_id).is_none() {

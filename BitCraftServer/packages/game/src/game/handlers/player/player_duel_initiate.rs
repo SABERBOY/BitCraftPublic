@@ -1,3 +1,4 @@
+use bitcraft_macro::feature_gate;
 use spacetimedb::ReducerContext;
 
 use crate::{
@@ -9,6 +10,7 @@ use crate::{
 };
 
 #[spacetimedb::reducer]
+#[feature_gate("combat")]
 pub fn player_duel_initiate(ctx: &ReducerContext, target_player_entity_id: u64) -> Result<(), String> {
     let actor_id = game_state::actor_id(&ctx, true)?;
     HealthState::check_incapacitated(ctx, actor_id, true)?;

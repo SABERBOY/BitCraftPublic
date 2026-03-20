@@ -177,6 +177,69 @@ pub fn shared_table_reducer(_args: TokenStream, input: TokenStream) -> TokenStre
     proc_macro::TokenStream::from(ast.into_token_stream())
 }
 
+#[proc_macro_attribute]
+pub fn feature_gate(args: TokenStream, input: TokenStream) -> TokenStream {
+    let mut ast: syn::ItemFn = match syn::parse(input.clone()) {
+        Ok(val) => val,
+        Err(_) => return input,
+    };
+
+    let category = match parse_feature_gate_args(args) {
+        Ok(value) => value,
+        Err(err) => return err,
+    };
+
+    if !return_type_is_result_string(&ast.sig.output) {
+        return compile_error("`#[feature_gate]` can only be used on reducers returning `Result<_, String>`");
+    }
+
+    let ctx_ident = match find_reducer_context_ident(&ast.sig.inputs) {
+        Some(ident) => ident,
+        None => return compile_error("`#[feature_gate]` requires a named `ReducerContext` parameter"),
+    };
+
+    let reducer_name = syn::LitStr::new(ast.sig.ident.to_string().as_str(), ast.sig.ident.span());
+    let category_gate = if let Some(category_name) = category {
+        quote! {
+            let __feature_gate_category_key = format!("category:{}", #category_name);
+            if crate::messages::generic::gated_features::gated_features(&#ctx_ident.db)
+                .feature()
+                .find(&__feature_gate_category_key)
+                .is_some()
+            {
+                return Err("This functionality is currently disabled".into());
+            }
+        }
+    } else {
+        quote! {}
+    };
+
+    let gen_start = quote! {{
+        if !crate::game::handlers::authentication::has_role(
+            #ctx_ident,
+            &#ctx_ident.sender,
+            crate::messages::authentication::Role::Gm,
+        ) {
+            let __feature_gate_reducer_key = format!("reducer:{}", #reducer_name);
+            if crate::messages::generic::gated_features::gated_features(&#ctx_ident.db)
+                .feature()
+                .find(&__feature_gate_reducer_key)
+                .is_some()
+            {
+                return Err("This functionality is currently disabled".into());
+            }
+            #category_gate
+        }
+    }};
+
+    let ast_start: syn::Block = syn::parse2(gen_start).unwrap();
+    for (idx, stmt) in ast_start.stmts.into_iter().enumerate() {
+        ast.block.stmts.insert(idx, stmt);
+    }
+
+    proc_macro::TokenStream::from(ast.into_token_stream())
+}
+
 fn camel_to_snake(str: &String) -> String {
     let mut output = String::new();
     for c in str.chars() {
@@ -334,4 +397,90 @@ pub fn event_table(args: TokenStream, input: TokenStream) -> TokenStream {
 
 fn compile_error(err: &str) -> TokenStream {
     return proc_macro::TokenStream::from(syn::Error::new(proc_macro2::Span::from(Span::call_site()), err.to_string()).to_compile_error());
+}
+
+fn parse_feature_gate_args(args: TokenStream) -> Result<Option<syn::LitStr>, TokenStream> {
+    if args.is_empty() {
+        return Ok(None);
+    }
+
+    match syn::parse::<syn::LitStr>(args) {
+        Ok(v) => Ok(Some(v)),
+        Err(_) => Err(compile_error(
+            "Expected usage: #[feature_gate] or #[feature_gate(\"category\")]",
+        )),
+    }
+}
+
+fn find_reducer_context_ident(
+    inputs: &syn::punctuated::Punctuated<syn::FnArg, syn::token::Comma>,
+) -> Option<syn::Ident> {
+    for arg in inputs {
+        if let syn::FnArg::Typed(pat_type) = arg {
+            let pat_ident = match &*pat_type.pat {
+                syn::Pat::Ident(pat_ident) => pat_ident.ident.clone(),
+                _ => continue,
+            };
+            if type_is_reducer_context(&pat_type.ty) {
+                return Some(pat_ident);
+            }
+        }
+    }
+    None
+}
+
+fn type_is_reducer_context(ty: &syn::Type) -> bool {
+    match ty {
+        syn::Type::Reference(ref_type) => type_is_reducer_context(&ref_type.elem),
+        syn::Type::Path(type_path) => type_path
+            .path
+            .segments
+            .last()
+            .map_or(false, |segment| segment.ident == "ReducerContext"),
+        _ => false,
+    }
+}
+
+fn return_type_is_result_string(output: &syn::ReturnType) -> bool {
+    let return_ty = match output {
+        syn::ReturnType::Type(_, ty) => &**ty,
+        syn::ReturnType::Default => return false,
+    };
+
+    let return_ty_path = match return_ty {
+        syn::Type::Path(type_path) => &type_path.path,
+        _ => return false,
+    };
+
+    let result_segment = match return_ty_path.segments.last() {
+        Some(segment) if segment.ident == "Result" => segment,
+        _ => return false,
+    };
+
+    let args = match &result_segment.arguments {
+        syn::PathArguments::AngleBracketed(args) => &args.args,
+        _ => return false,
+    };
+
+    if args.len() != 2 {
+        return false;
+    }
+
+    let error_ty = match args.iter().nth(1) {
+        Some(syn::GenericArgument::Type(ty)) => ty,
+        _ => return false,
+    };
+
+    type_is_string(error_ty)
+}
+
+fn type_is_string(ty: &syn::Type) -> bool {
+    match ty {
+        syn::Type::Path(type_path) => type_path
+            .path
+            .segments
+            .last()
+            .map_or(false, |segment| segment.ident == "String"),
+        _ => false,
+    }
 }

@@ -1,3 +1,4 @@
+use bitcraft_macro::feature_gate;
 use spacetimedb::{ReducerContext, Table};
 
 use crate::game::game_state::{self, create_entity, unix};
@@ -12,6 +13,7 @@ use crate::messages::global::{
 use crate::{i18n, unwrap_or_err};
 
 #[spacetimedb::reducer]
+#[feature_gate]
 pub fn chat_post_targeted_message(ctx: &ReducerContext, request: PlayerChatPostMessageRequest) -> Result<(), String> {
     let actor_id = game_state::actor_id(&ctx, true)?;
     // PlayerTimestampState::refresh(ctx, actor_id, ctx.timestamp); // TODO: Maybe we want to do this in the future, but not trivial. It would require sending intermodule messages.

@@ -1,3 +1,4 @@
+use bitcraft_macro::feature_gate;
 use spacetimedb::{log, ReducerContext, Table};
 
 use crate::{
@@ -8,6 +9,7 @@ use crate::{
 };
 
 #[spacetimedb::reducer]
+#[feature_gate("build")]
 pub fn building_set_sign_text(ctx: &ReducerContext, request: BuildingSetSignTextRequest) -> Result<(), String> {
     let actor_id = game_state::actor_id(&ctx, true)?;
     PlayerTimestampState::refresh(ctx, actor_id, ctx.timestamp);

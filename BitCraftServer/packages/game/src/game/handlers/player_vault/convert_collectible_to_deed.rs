@@ -1,3 +1,4 @@
+use bitcraft_macro::feature_gate;
 use crate::game::discovery::Discovery;
 use crate::game::entities::building_state::InventoryState;
 use crate::game::game_state;
@@ -9,6 +10,7 @@ use crate::{collectible_desc, deployable_desc, unwrap_or_err, CollectibleDesc, C
 use spacetimedb::{ReducerContext, Table};
 
 #[spacetimedb::reducer]
+#[feature_gate]
 pub fn convert_collectible_to_deed(ctx: &ReducerContext, request: PlayerConvertCollectibleToDeedRequest) -> Result<(), String> {
     let actor_id = game_state::actor_id(&ctx, true)?;
     PlayerTimestampState::refresh(ctx, actor_id, ctx.timestamp);

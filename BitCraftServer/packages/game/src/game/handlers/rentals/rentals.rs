@@ -1,3 +1,4 @@
+use bitcraft_macro::feature_gate;
 use std::time::Duration;
 
 use crate::game::game_state;
@@ -22,6 +23,7 @@ fn validate_co_owner_permissions(ctx: &ReducerContext, actor_id: u64, rent_entit
 }
 
 #[spacetimedb::reducer]
+#[feature_gate]
 pub fn rent_add_listing(ctx: &ReducerContext, request: RentAddListingRequest) -> Result<(), String> {
     let actor_id = game_state::actor_id(&ctx, true)?;
     PlayerTimestampState::refresh(ctx, actor_id, ctx.timestamp);
@@ -37,6 +39,7 @@ pub fn rent_add_listing(ctx: &ReducerContext, request: RentAddListingRequest) ->
 }
 
 #[spacetimedb::reducer]
+#[feature_gate]
 pub fn rent_unlist(ctx: &ReducerContext, request: RentUnlistRequest) -> Result<(), String> {
     let actor_id = game_state::actor_id(&ctx, true)?;
     PlayerTimestampState::refresh(ctx, actor_id, ctx.timestamp);
@@ -52,6 +55,7 @@ pub fn rent_unlist(ctx: &ReducerContext, request: RentUnlistRequest) -> Result<(
 }
 
 #[spacetimedb::reducer]
+#[feature_gate]
 pub fn rent_deposit_coins(ctx: &ReducerContext, request: RentDepositCoinsRequest) -> Result<(), String> {
     let actor_id = game_state::actor_id(&ctx, true)?;
     PlayerTimestampState::refresh(ctx, actor_id, ctx.timestamp);
@@ -77,6 +81,7 @@ pub fn rent_deposit_coins(ctx: &ReducerContext, request: RentDepositCoinsRequest
 }
 
 #[spacetimedb::reducer]
+#[feature_gate]
 pub fn rent_remove_tenant(ctx: &ReducerContext, request: RentRemoveTenantRequest) -> Result<(), String> {
     let actor_id = game_state::actor_id(&ctx, true)?;
     PlayerTimestampState::refresh(ctx, actor_id, ctx.timestamp);
@@ -102,6 +107,7 @@ pub fn rent_remove_tenant(ctx: &ReducerContext, request: RentRemoveTenantRequest
 }
 
 #[spacetimedb::reducer]
+#[feature_gate]
 pub fn rent_add_tenant(ctx: &ReducerContext, request: RentAddTenantRequest) -> Result<(), String> {
     let actor_id = game_state::actor_id(&ctx, true)?;
     PlayerTimestampState::refresh(ctx, actor_id, ctx.timestamp);
@@ -134,6 +140,7 @@ pub fn rent_add_tenant(ctx: &ReducerContext, request: RentAddTenantRequest) -> R
 }
 
 #[spacetimedb::reducer]
+#[feature_gate]
 pub fn rent_set_daily_rate(ctx: &ReducerContext, request: RentSetDailyRateRequest) -> Result<(), String> {
     let actor_id = game_state::actor_id(&ctx, true)?;
     PlayerTimestampState::refresh(ctx, actor_id, ctx.timestamp);
@@ -146,6 +153,7 @@ pub fn rent_set_daily_rate(ctx: &ReducerContext, request: RentSetDailyRateReques
 }
 
 #[spacetimedb::reducer]
+#[feature_gate]
 pub fn rent_purchase(ctx: &ReducerContext, request: RentPurchaseRequest) -> Result<(), String> {
     let actor_id = game_state::actor_id(&ctx, true)?;
     PlayerTimestampState::refresh(ctx, actor_id, ctx.timestamp);
@@ -187,6 +195,7 @@ pub fn rent_purchase(ctx: &ReducerContext, request: RentPurchaseRequest) -> Resu
 }
 
 #[spacetimedb::reducer]
+#[feature_gate]
 pub fn rent_evict(ctx: &ReducerContext, request: RentEvictRequest) -> Result<(), String> {
     let actor_id = game_state::actor_id(&ctx, true)?;
     PlayerTimestampState::refresh(ctx, actor_id, ctx.timestamp);
@@ -272,6 +281,7 @@ pub struct RentEvictTimer {
 }
 
 #[spacetimedb::reducer]
+#[feature_gate]
 pub fn rent_evict_term(ctx: &ReducerContext, timer: RentEvictTimer) -> Result<(), String> {
     ServerIdentity::validate_server_or_admin(&ctx)?;
 
@@ -286,6 +296,7 @@ pub fn rent_evict_term(ctx: &ReducerContext, timer: RentEvictTimer) -> Result<()
 }
 
 #[spacetimedb::reducer]
+#[feature_gate]
 pub fn rent_terminate(ctx: &ReducerContext, request: RentTerminateRequest) -> Result<(), String> {
     let actor_id = game_state::actor_id(&ctx, true)?;
     PlayerTimestampState::refresh(ctx, actor_id, ctx.timestamp);
@@ -317,6 +328,7 @@ pub fn rent_terminate(ctx: &ReducerContext, request: RentTerminateRequest) -> Re
 }
 
 #[spacetimedb::reducer]
+#[feature_gate]
 pub fn rent_collect_eviction_fee(ctx: &ReducerContext, rent_entity_id: u64) -> Result<(), String> {
     let actor_id = game_state::actor_id(&ctx, true)?;
     PlayerTimestampState::refresh(ctx, actor_id, ctx.timestamp);

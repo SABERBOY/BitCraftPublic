@@ -1072,6 +1072,20 @@ pub fn import_equipment_state(ctx: &ReducerContext, records: Vec<EquipmentState>
 }
 
 #[spacetimedb::reducer]
+pub fn import_equipment_preset_state(ctx: &ReducerContext, records: Vec<EquipmentPresetState>) {
+    if !has_role(ctx, &ctx.sender, Role::Admin) {
+        log::error!("Invalid permissions");
+        return ();
+    }
+    log::info!("Will insert {} records of type EquipmentPresetState", records.len());
+    let len = records.len();
+    for record in records {
+        ctx.db.equipment_preset_state().try_insert(record).unwrap();
+    }
+    log::info!("Inserted {} records of type EquipmentPresetState", len);
+}
+
+#[spacetimedb::reducer]
 pub fn import_experience_state(ctx: &ReducerContext, records: Vec<ExperienceState>) {
     if !has_role(ctx, &ctx.sender, Role::Admin) {
         log::error!("Invalid permissions");

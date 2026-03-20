@@ -59,8 +59,11 @@ impl EmpireNodeSiegeState {
     }
 
     pub fn has_active_siege(ctx: &ReducerContext, building_entity_id: u64) -> bool {
-        let mut sieges_on_node = ctx.db.empire_node_siege_state().building_entity_id().filter(building_entity_id);
-        sieges_on_node.any(|s| s.active)
+        ctx.db
+            .empire_node_siege_state()
+            .building_entity_id()
+            .filter(building_entity_id)
+            .any(|s| s.active)
     }
 
     pub fn validate_action(ctx: &ReducerContext, actor_id: u64, building_entity_id: u64) -> Result<(), String> {

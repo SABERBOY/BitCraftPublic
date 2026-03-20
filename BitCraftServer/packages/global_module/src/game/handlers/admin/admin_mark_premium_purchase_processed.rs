@@ -77,6 +77,6 @@ fn decrement_shard_balance(ctx: &ReducerContext, identity: Identity, price: u32)
         return;
     };
 
-    existing.balance -= price;
+    existing.balance = existing.balance.saturating_sub(price);
     ctx.db.granted_hub_item_state().entity_id().update(existing);
 }

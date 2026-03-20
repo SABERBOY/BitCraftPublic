@@ -1,10 +1,12 @@
+use std::time::Duration;
+
 use spacetimedb::{ReducerContext, Table, Timestamp};
 
 pub use crate::game::coordinates::*;
 use crate::game::game_state;
 use crate::messages::components::*;
 use crate::messages::static_data::EnemyType;
-use crate::EnemyDesc;
+use crate::{parameters_desc, params, EnemyDesc};
 
 impl EnemyState {
     pub fn new(ctx: &ReducerContext, enemy_type: EnemyType, herd_entity_id: u64) -> EnemyState {
@@ -68,6 +70,13 @@ impl EnemyState {
                     crumb_trail_entity_id: herd.crumb_trail_entity_id,
                 };
                 ctx.db.crumb_trail_contribution_lock_state().insert(lock);
+
+                let combat_immunity = CombatImmunityState {
+                    entity_id,
+                    immunity_end_timestamp: ctx.timestamp + Duration::from_secs(params!(ctx).prospecting_herd_immunity_secs as u64),
+                    crumb_trail_entity_id: Some(herd.crumb_trail_entity_id),
+                };
+                ctx.db.combat_immunity_state().insert(combat_immunity);
             }
         }
 

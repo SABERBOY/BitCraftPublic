@@ -277,6 +277,7 @@ fn create_player(ctx: &ReducerContext, entity_id: u64) -> Result<u64, String> {
     discovery.acquire_item(ctx, hex_coin_id);
     discovery.commit(ctx);
 
+    // [FINAL RELEASE]
     let equipment = EquipmentState {
         entity_id,
         equipment_slots: vec![
@@ -290,19 +291,19 @@ fn create_player(ctx: &ReducerContext, entity_id: u64) -> Result<u64, String> {
             },
             EquipmentSlot {
                 item: None,
-                primary: EquipmentSlotType::HeadArtifact,
+                primary: EquipmentSlotType::HeadArtifact, // Seems to be where the Heart artifact is stored
             },
             EquipmentSlot {
                 item: None,
-                primary: EquipmentSlotType::TorsoArtifact,
+                primary: EquipmentSlotType::TorsoArtifact, // Seems unused
             },
             EquipmentSlot {
                 item: None,
-                primary: EquipmentSlotType::HandArtifact, // Obsolete for now
+                primary: EquipmentSlotType::HandArtifact, // Ring artifacts
             },
             EquipmentSlot {
                 item: None,
-                primary: EquipmentSlotType::FeetArtifact, // Obsolete for now
+                primary: EquipmentSlotType::FeetArtifact, // Seems unused
             },
             EquipmentSlot {
                 item: None,
@@ -466,11 +467,12 @@ fn create_player(ctx: &ReducerContext, entity_id: u64) -> Result<u64, String> {
     })?;
 
     ctx.db.attack_outcome_state().try_insert(AttackOutcomeState::new(entity_id))?;
-    ctx.db.extract_outcome_state().try_insert(ExtractOutcomeState {
+    ctx.db.extract_outcome_state().try_insert(ExtractOutcomeStateV2 {
         entity_id,
         target_entity_id: 0,
         last_timestamp: ctx.timestamp,
         damage: 0,
+        is_crit: false,
     })?;
 
     ctx.db.targetable_state().try_insert(TargetableState::new(entity_id))?;
@@ -546,7 +548,7 @@ fn create_player(ctx: &ReducerContext, entity_id: u64) -> Result<u64, String> {
 
     send_inter_module_message(
         ctx,
-        crate::messages::inter_module::MessageContents::OnRegionPlayerCreated(OnRegionPlayerCreatedMsg {
+        crate::messages::inter_module::MessageContentsV2::OnRegionPlayerCreated(OnRegionPlayerCreatedMsg {
             player_entity_id: entity_id,
         }),
         crate::inter_module::InterModuleDestination::Global,

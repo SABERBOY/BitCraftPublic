@@ -3,6 +3,7 @@ use spacetimedb::SpacetimeType;
 use std::fmt;
 
 use crate::messages::components::{AbilityType};
+use crate::messages::empire_shared::EmpirePermission;
 use crate::messages::game_util::{
     BuildingRequirement, ExperienceStackF32, InputItemStack, ItemListPossibility, ItemStack, LevelRequirement, CappedLevelRequirement, ProbabilisticItemStack,
     ToolRequirement,
@@ -131,15 +132,16 @@ pub enum ClothingMask {
     HairFull,
 }
 
+// [FINAL RELEASE] Get rid of Artifacts (except for Head) and possibly Main/OffHand
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, spacetimedb::SpacetimeType)]
 #[sats(name = "EquipmentSlotType")]
 #[repr(u8)]
 pub enum EquipmentSlotType {
     MainHand,
     OffHand,
-    HeadArtifact,
+    HeadArtifact,       // [FINAL RELEASE] Rename for HeartArtifact
     TorsoArtifact,
-    HandArtifact,
+    HandArtifact,       // [FINAL RELEASE] Rename for RingArtifact
     FeetArtifact,
     HeadClothing,
     TorsoClothing,
@@ -339,6 +341,35 @@ pub enum CharacterStatType {
     MaxTeleportationEnergy,
     TeleportationEnergyRegenRate,
     ConstructionPower,
+    // [FINAL RELEASE] Sadly we missed the chance offered by the wipe to change the temporary character stats and the like. It would be good to do it for the final release.
+    ForestryCritChance,
+    CarpentryCritChance,
+    MasonryCritChance,
+    MiningCritChance,
+    SmithingCritChance,
+    ScholarCritChance,
+    LeatherworkingCritChance,
+    HuntingCritChance,
+    TailoringCritChance,
+    FarmingCritChance,
+    FishingCritChance,
+    ForagingCritChance,
+    ForestryCritMultiplier,
+    CarpentryCritMultiplier,
+    MasonryCritMultiplier,
+    MiningCritMultiplier,
+    SmithingCritMultiplier,
+    ScholarCritMultiplier,
+    LeatherworkingCritMultiplier,
+    HuntingCritMultiplier,
+    TailoringCritMultiplier,
+    FarmingCritMultiplier,
+    FishingCritMultiplier,
+    ForagingCritMultiplier,
+    HexiteGatheringPower,
+    HexiteGatheringSpeed,
+    HexiteGatheringCritChance,
+    HexiteGatheringCritMultiplier,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, spacetimedb::SpacetimeType)]
@@ -888,8 +919,10 @@ pub struct ExtractionRecipeDesc {
     pub verb_phrase: String,
     pub tool_mesh_index: i32,
     pub recipe_performance_id: i32,
-    pub empire_rank_requirement: Option<i32>,
+    pub empire_rank_requirement: Option<i32>,       // [FINAL RELEASE] Obsolete, remove.
     pub show_in_progression: bool,
+    #[default(None::<EmpirePermission>)]
+    pub empire_permission_required: Option<EmpirePermission>,
 }
 
 #[static_data_staging_table(deconstruction_recipe_desc)]
@@ -935,7 +968,7 @@ pub struct WeaponDesc {
 
 #[static_data_staging_table(parameters_desc)]
 #[spacetimedb::table(name = parameters_desc, public)]
-#[derive(Clone, PartialEq, Debug, Default)]
+#[derive(Clone, PartialEq, Debug)]
 pub struct ParametersDesc {
     #[primary_key]
     pub version: i32,
@@ -1031,6 +1064,8 @@ pub struct ParametersDesc {
     pub empire_rename_currency_cost: u32,
     pub empire_move_capital_currency_cost: u32,
     pub hexite_capsule_currency_cost: u32,
+    #[default(0u32)]
+    pub prospecting_herd_immunity_secs: u32,
 }
 
 #[spacetimedb::table(name = parameters_player_move_desc)]
@@ -2254,6 +2289,12 @@ pub struct AbilityCustomDesc {
     pub icon_path: String,                  // for action bar ui
 }
 
+// For Migration purpose
+const EMPTY_EXP_STACK: ExperienceStackF32 = ExperienceStackF32 {
+    skill_id: 0,
+    quantity: 0.0,
+};
+
 #[static_data_staging_table(prospecting_desc)]
 #[spacetimedb::table(name = prospecting_desc, public)]
 #[derive(Clone, PartialEq, Debug)]
@@ -2294,6 +2335,19 @@ pub struct ProspectingDesc {
 
     pub icon_asset_path: String,
 
+    #[default(EMPTY_EXP_STACK)]
+    pub experience_per_node: ExperienceStackF32,
+
+    #[default(0.0)]
+    pub pct_nodes_for_max_contribution: f32,
+}
+
+#[static_data_staging_table(equipment_preset_knowledge_desc)]
+#[spacetimedb::table(name = equipment_preset_knowledge_desc, public)]
+#[derive(Clone, PartialEq, Debug)]
+pub struct EquipmentPresetKnowledgeDesc {
+    #[primary_key]
+    pub knowledge_id: i32,
 }
 
 #[static_data_staging_table(quest_chain_desc)]

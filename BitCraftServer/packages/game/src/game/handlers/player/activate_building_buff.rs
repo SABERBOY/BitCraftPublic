@@ -1,3 +1,4 @@
+use bitcraft_macro::feature_gate;
 use spacetimedb::ReducerContext;
 
 use crate::game::entities;
@@ -11,6 +12,7 @@ use crate::messages::static_data::{building_buff_desc, building_desc, item_desc}
 use crate::{unwrap_or_err, PlayerTimestampState};
 
 #[spacetimedb::reducer]
+#[feature_gate]
 pub fn activate_building_buff(ctx: &ReducerContext, building_entity_id: u64) -> Result<(), String> {
     let actor_id = game_state::actor_id(&ctx, true)?;
     PlayerTimestampState::refresh(ctx, actor_id, ctx.timestamp);
@@ -86,7 +88,7 @@ pub fn activate_building_buff(ctx: &ReducerContext, building_entity_id: u64) -> 
 
         send_inter_module_message(
             ctx,
-            crate::messages::inter_module::MessageContents::EmpireAddCurrency(EmpireAddCurrencyMsg {
+            crate::messages::inter_module::MessageContentsV2::EmpireAddCurrency(EmpireAddCurrencyMsg {
                 empire_entity_id,
                 amount: building_buff.empire_currency_cost as u32,
             }),

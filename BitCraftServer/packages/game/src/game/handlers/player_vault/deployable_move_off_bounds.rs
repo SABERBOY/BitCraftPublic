@@ -1,3 +1,4 @@
+use bitcraft_macro::feature_gate;
 use spacetimedb::ReducerContext;
 
 use crate::{
@@ -10,6 +11,7 @@ use crate::{
 };
 
 #[spacetimedb::reducer]
+#[feature_gate]
 pub fn deployable_move_off_bounds(ctx: &ReducerContext, deployable_entity_id: u64) -> Result<(), String> {
     // Note:
     // This code is pretty much identical to the deployable_move_off_claims code, except for ownership check and that it looks for footprints

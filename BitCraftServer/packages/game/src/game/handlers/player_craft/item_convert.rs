@@ -1,3 +1,4 @@
+use bitcraft_macro::feature_gate;
 use std::time::Duration;
 
 use spacetimedb::ReducerContext;
@@ -27,6 +28,7 @@ pub fn event_delay_recipe_id(ctx: &ReducerContext, request: &PlayerItemConvertRe
 }
 
 #[spacetimedb::reducer]
+#[feature_gate("craft")]
 pub fn item_convert_start(ctx: &ReducerContext, request: PlayerItemConvertRequest) -> Result<(), String> {
     let actor_id = game_state::actor_id(&ctx, true)?;
     PlayerTimestampState::refresh(ctx, actor_id, ctx.timestamp);
@@ -45,6 +47,7 @@ pub fn item_convert_start(ctx: &ReducerContext, request: PlayerItemConvertReques
 }
 
 #[spacetimedb::reducer]
+#[feature_gate("craft")]
 pub fn item_convert(ctx: &ReducerContext, request: PlayerItemConvertRequest) -> Result<(), String> {
     let actor_id = game_state::actor_id(&ctx, true)?;
     PlayerTimestampState::refresh(ctx, actor_id, ctx.timestamp);

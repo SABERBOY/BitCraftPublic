@@ -1,3 +1,4 @@
+use bitcraft_macro::feature_gate;
 use std::time::Duration;
 
 use crate::climb_requirement_desc;
@@ -34,6 +35,7 @@ fn event_delay(ctx: &ReducerContext, terrain_cache: &mut TerrainChunkCache, requ
 }
 
 #[spacetimedb::reducer]
+#[feature_gate]
 pub fn player_climb_start(ctx: &ReducerContext, request: PlayerClimbRequest) -> Result<(), String> {
     let actor_id = game_state::actor_id(&ctx, true)?;
     PlayerTimestampState::refresh(ctx, actor_id, ctx.timestamp);
@@ -58,6 +60,7 @@ pub fn player_climb_start(ctx: &ReducerContext, request: PlayerClimbRequest) -> 
 }
 
 #[spacetimedb::reducer]
+#[feature_gate]
 pub fn player_climb(ctx: &ReducerContext, request: PlayerClimbRequest) -> Result<(), String> {
     let actor_id = game_state::actor_id(&ctx, true)?;
     PlayerTimestampState::refresh(ctx, actor_id, ctx.timestamp);

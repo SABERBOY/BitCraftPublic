@@ -196,7 +196,7 @@ impl EmpireNodeSiegeState {
 
         send_inter_module_message(
             ctx,
-            crate::messages::inter_module::MessageContents::EmpireSiegeAddSupplies(EmpireSiegeAddSuppliesMsg {
+            crate::messages::inter_module::MessageContentsV2::EmpireSiegeAddSupplies(EmpireSiegeAddSuppliesMsg {
                 siege_entity_id: siege.unwrap().entity_id,
                 player_entity_id: actor_id,
                 supplies,

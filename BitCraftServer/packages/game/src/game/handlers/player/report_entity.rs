@@ -1,3 +1,4 @@
+use bitcraft_macro::feature_gate;
 use bitcraft_macro::shared_table_reducer;
 use spacetimedb::ReducerContext;
 
@@ -10,6 +11,7 @@ use crate::unwrap_or_err;
 
 #[spacetimedb::reducer]
 #[shared_table_reducer]
+#[feature_gate]
 pub fn report_entity(ctx: &ReducerContext, request: ReportEntityMessage) -> Result<(), String> {
     let actor_id = game_state::actor_id(&ctx, true)?;
 

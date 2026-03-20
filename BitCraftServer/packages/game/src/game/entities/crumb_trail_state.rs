@@ -5,7 +5,12 @@ use spacetimedb::{log, rand::Rng, ReducerContext, Table};
 
 use crate::{
     agents::resources_regen::*,
-    game::{coordinates::SmallHexTile, dimensions, game_state, terrain_chunk::TerrainChunkCache, unity_helpers::vector2::Vector2},
+    game::{
+        coordinates::{FloatHexTile, SmallHexTile},
+        dimensions, game_state,
+        terrain_chunk::TerrainChunkCache,
+        unity_helpers::vector2::Vector2,
+    },
     messages::{
         components::{
             crumb_trail_contribution_lock_state, herd_state, CrumbTrailContributionLockState, CrumbTrailState, HerdState, ResourceState,
@@ -288,7 +293,6 @@ impl CrumbTrailState {
                         join_radius: prospecting_desc.join_radius,
                         clean_up_counter: 0,
                     };
-
                     Self::extra_debug_log("# success #");
 
                     return Some(trail);
@@ -420,13 +424,28 @@ impl CrumbTrailState {
         angles
     }
 
-    pub fn spawn_herd_prize(&mut self, ctx: &ReducerContext, prospecting_desc: &ProspectingDesc) {
+    pub fn distance_to_destination(&self, player_location: FloatHexTile, step: i32) -> f32 {
+        let to_prize = step as usize >= self.crumb_locations.len();
+
+        let tile = if to_prize {
+            SmallHexTileMessage::from(self.prize_location)
+        } else {
+            SmallHexTileMessage::from(self.crumb_locations[step as usize])
+        };
+        let tile_location = FloatHexTile::from(tile);
+
+        player_location.distance_to(tile_location)
+    }
+
+    pub fn spawn_herd_prize(&mut self, ctx: &ReducerContext, prospecting_desc: &ProspectingDesc) -> u64 {
         let enemy_ai_id = prospecting_desc.enemy_ai_desc_id;
         let mut herd = HerdState::new(ctx, enemy_ai_id);
+        let herd_entity_id = herd.entity_id;
         herd.population_variance = vec![0.0, 0.0];
         herd.crumb_trail_entity_id = self.entity_id;
         self.prize_entity_ids = vec![herd.entity_id];
         game_state::insert_location(ctx, herd.entity_id, self.prize_location);
         ctx.db.herd_state().insert(herd);
+        herd_entity_id
     }
 }

@@ -100,7 +100,7 @@ pub fn admin_replace_identity(ctx: &ReducerContext, old_identity: String, new_id
 
     send_inter_module_message(
         ctx,
-        crate::messages::inter_module::MessageContents::ReplaceIdentity(ReplaceIdentityMsg {
+        crate::messages::inter_module::MessageContentsV2::ReplaceIdentity(ReplaceIdentityMsg {
             old_identity,
             new_identity,
         }),

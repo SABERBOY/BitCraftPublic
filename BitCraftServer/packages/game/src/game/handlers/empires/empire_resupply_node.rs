@@ -1,3 +1,4 @@
+use bitcraft_macro::feature_gate;
 use std::time::Duration;
 
 use spacetimedb::ReducerContext;
@@ -22,6 +23,7 @@ use crate::{
 use super::empires_shared::empire_resupply_node_validate;
 
 #[spacetimedb::reducer]
+#[feature_gate("empire")]
 pub fn empire_resupply_node_start(ctx: &ReducerContext, request: EmpireResupplyNodeRequest) -> Result<(), String> {
     let actor_id = game_state::actor_id(&ctx, true)?;
 
@@ -46,6 +48,7 @@ pub fn empire_resupply_node_start(ctx: &ReducerContext, request: EmpireResupplyN
 }
 
 #[spacetimedb::reducer]
+#[feature_gate("empire")]
 pub fn empire_resupply_node(ctx: &ReducerContext, request: EmpireResupplyNodeRequest) -> Result<(), String> {
     let actor_id = game_state::actor_id(&ctx, true)?;
 
@@ -109,7 +112,7 @@ pub fn empire_resupply_node_reduce(
     let supplies_count = ctx.db.empire_supplies_desc().cargo_id().find(&cargo_id).unwrap().energy;
     send_inter_module_message(
         ctx,
-        crate::messages::inter_module::MessageContents::EmpireResupplyNode(EmpireResupplyNodeMsg {
+        crate::messages::inter_module::MessageContentsV2::EmpireResupplyNode(EmpireResupplyNodeMsg {
             building_entity_id,
             supplies_count,
             player_entity_id: actor_id,

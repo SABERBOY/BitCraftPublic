@@ -1,3 +1,4 @@
+use bitcraft_macro::feature_gate;
 use crate::game::game_state::{self, game_state_filters};
 use crate::game::handlers::inventory::inventory_helper;
 use crate::game::permission_helper;
@@ -9,6 +10,7 @@ use crate::{construction_recipe_desc, resource_placement_recipe_desc, unwrap_or_
 use spacetimedb::ReducerContext;
 
 #[spacetimedb::reducer]
+#[feature_gate("build")]
 pub fn project_site_add_materials(ctx: &ReducerContext, request: PlayerProjectSiteAddMaterialsRequest) -> Result<(), String> {
     let actor_id = game_state::actor_id(&ctx, true)?;
     PlayerTimestampState::refresh(ctx, actor_id, ctx.timestamp);

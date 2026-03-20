@@ -1,3 +1,4 @@
+use bitcraft_macro::feature_gate;
 use crate::game::game_state::{game_state_filters, wind_system};
 use crate::game::handlers::authentication::has_role_no_dev;
 use crate::game::reducer_helpers;
@@ -13,6 +14,7 @@ use crate::{
 use spacetimedb::ReducerContext;
 
 #[spacetimedb::reducer]
+#[feature_gate]
 pub fn deployable_move(ctx: &ReducerContext, request: PlayerDeployableMoveRequest) -> Result<(), String> {
     let actor_id = game_state::actor_id(&ctx, true)?;
     HealthState::check_incapacitated(ctx, actor_id, true)?;

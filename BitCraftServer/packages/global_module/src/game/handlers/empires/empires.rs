@@ -1,3 +1,4 @@
+use bitcraft_macro::feature_gate;
 use crate::game::game_state;
 use crate::game::handlers::authentication::has_role;
 use crate::game::reducer_helpers::timer_helpers::now_plus_secs;
@@ -6,7 +7,7 @@ use crate::inter_module::send_inter_module_message;
 use crate::messages::authentication::Role;
 use crate::messages::components::*;
 use crate::messages::global::{player_shard_state, user_region_state, PlayerVoteState, PlayerVoteType};
-use crate::messages::inter_module::{MessageContents, OnEmpireBuildingDeletedMsg, OnPlayerLeftEmpireMsg};
+use crate::messages::inter_module::{MessageContentsV2, OnEmpireBuildingDeletedMsg, OnPlayerLeftEmpireMsg};
 use crate::messages::static_data::*;
 use crate::{empire_territory_desc, parameters_desc, unwrap_or_err};
 use bitcraft_macro::shared_table_reducer;
@@ -18,6 +19,7 @@ use crate::messages::empire_shared::*;
 
 #[spacetimedb::reducer]
 #[shared_table_reducer]
+#[feature_gate("empire")]
 pub fn empire_form(ctx: &ReducerContext, request: EmpireFormRequest) -> Result<(), String> {
     let actor_id = game_state::actor_id(&ctx, true)?;
 
@@ -155,6 +157,7 @@ pub fn empire_form(ctx: &ReducerContext, request: EmpireFormRequest) -> Result<(
 
 /*
 #[spacetimedb::reducer]
+#[feature_gate("empire")]
 pub fn empire_invite_claim(ctx: &ReducerContext, request: EmpireInviteClaim) -> Result<(), String> {
     let actor_id = game_state::actor_id(&ctx)?;
     PlayerTimestampState::refresh(actor_id, ctx.timestamp);
@@ -189,6 +192,7 @@ pub fn empire_invite_claim(ctx: &ReducerContext, request: EmpireInviteClaim) -> 
 }
 
 #[spacetimedb::reducer]
+#[feature_gate("empire")]
 pub fn empire_expel_claim(ctx: &ReducerContext, building_entity_id: u64) -> Result<(), String> {
     let actor_id = game_state::actor_id(&ctx)?;
     PlayerTimestampState::refresh(actor_id, ctx.timestamp);
@@ -218,6 +222,7 @@ pub fn empire_expel_claim(ctx: &ReducerContext, building_entity_id: u64) -> Resu
 
 #[spacetimedb::reducer]
 #[shared_table_reducer]
+#[feature_gate("empire")]
 pub fn empire_submit(ctx: &ReducerContext, new_empire_entity_id: u64) -> Result<(), String> {
     let actor_id = game_state::actor_id(&ctx, true)?;
 
@@ -268,16 +273,12 @@ pub fn empire_submit(ctx: &ReducerContext, new_empire_entity_id: u64) -> Result<
 
 #[spacetimedb::reducer]
 #[shared_table_reducer]
+#[feature_gate("empire")]
 pub fn empire_player_join(ctx: &ReducerContext, request: EmpirePlayerJoinRequest) -> Result<(), String> {
     let actor_id = game_state::actor_id(&ctx, true)?;
 
     if let Some(rank) = ctx.db.empire_player_data_state().entity_id().find(&actor_id) {
-        empire_player_leave(
-            ctx,
-            EmpirePlayerLeaveRequest {
-                empire_entity_id: rank.empire_entity_id,
-            },
-        )?;
+        empire_player_leave_impl(ctx, rank.empire_entity_id)?;
     }
 
     if ctx.db.empire_state().entity_id().find(&request.empire_entity_id).is_none() {
@@ -307,14 +308,19 @@ pub fn empire_player_join(ctx: &ReducerContext, request: EmpirePlayerJoinRequest
 
 #[spacetimedb::reducer]
 #[shared_table_reducer]
+#[feature_gate("empire")]
 pub fn empire_player_leave(ctx: &ReducerContext, request: EmpirePlayerLeaveRequest) -> Result<(), String> {
+    return empire_player_leave_impl(ctx, request.empire_entity_id);
+}
+
+pub fn empire_player_leave_impl(ctx: &ReducerContext, empire_entity_id: u64) -> Result<(), String> {
     let actor_id = game_state::actor_id(&ctx, true)?;
 
     let rank = unwrap_or_err!(
         ctx.db.empire_player_data_state().entity_id().find(&actor_id),
         "Not a citizen of an empire"
     );
-    if rank.empire_entity_id != request.empire_entity_id {
+    if rank.empire_entity_id != empire_entity_id {
         return Err("Not a citizen of that empire".into());
     }
 
@@ -330,14 +336,14 @@ pub fn empire_player_leave(ctx: &ReducerContext, request: EmpirePlayerLeaveReque
 
     // Member Left Notification
     let player_name = ctx.db.player_username_state().entity_id().find(&actor_id).unwrap().username;
-    EmpireNotificationState::new(ctx, EmpireNotificationType::MemberLeft, request.empire_entity_id, vec![player_name]);
+    EmpireNotificationState::new(ctx, EmpireNotificationType::MemberLeft, empire_entity_id, vec![player_name]);
 
     let region = unwrap_or_err!(ctx.db.user_region_state().identity().find(ctx.sender), "Region not found").region_id;
     send_inter_module_message(
         ctx,
-        crate::messages::inter_module::MessageContents::OnPlayerLeftEmpire(OnPlayerLeftEmpireMsg {
+        crate::messages::inter_module::MessageContentsV2::OnPlayerLeftEmpire(OnPlayerLeftEmpireMsg {
             player_entity_id: actor_id,
-            empire_entity_id: request.empire_entity_id,
+            empire_entity_id,
         }),
         crate::inter_module::InterModuleDestination::Region(region),
     );
@@ -347,6 +353,7 @@ pub fn empire_player_leave(ctx: &ReducerContext, request: EmpirePlayerLeaveReque
 
 #[spacetimedb::reducer]
 #[shared_table_reducer]
+#[feature_gate("empire")]
 pub fn empire_leave(ctx: &ReducerContext, request: EmpireLeaveRequest) -> Result<(), String> {
     let actor_id = game_state::actor_id(&ctx, true)?;
 
@@ -384,6 +391,7 @@ pub fn empire_leave(ctx: &ReducerContext, request: EmpireLeaveRequest) -> Result
 
 #[spacetimedb::reducer]
 #[shared_table_reducer]
+#[feature_gate("empire")]
 pub fn empire_dismantle(ctx: &ReducerContext, request: EmpireDismantleRequest) -> Result<(), String> {
     let actor_id = game_state::actor_id(&ctx, true)?;
 
@@ -404,6 +412,7 @@ pub fn empire_dismantle(ctx: &ReducerContext, request: EmpireDismantleRequest) -
 
 #[spacetimedb::reducer]
 #[shared_table_reducer]
+#[feature_gate("empire")]
 pub fn empire_update_permissions(ctx: &ReducerContext, request: EmpireUpdatePermissionsRequest) -> Result<(), String> {
     let actor_id = game_state::actor_id(&ctx, true)?;
 
@@ -435,6 +444,7 @@ pub fn empire_update_permissions(ctx: &ReducerContext, request: EmpireUpdatePerm
 
 #[spacetimedb::reducer]
 #[shared_table_reducer]
+#[feature_gate("empire")]
 pub fn empire_set_rank_title(ctx: &ReducerContext, request: EmpireSetRankTitleRequest) -> Result<(), String> {
     let actor_id = game_state::actor_id(&ctx, true)?;
 
@@ -464,6 +474,7 @@ pub fn empire_set_rank_title(ctx: &ReducerContext, request: EmpireSetRankTitleRe
 
 #[spacetimedb::reducer]
 #[shared_table_reducer]
+#[feature_gate("empire")]
 pub fn empire_set_player_rank(ctx: &ReducerContext, request: EmpireSetPlayerRankRequest) -> Result<(), String> {
     let actor_id = game_state::actor_id(&ctx, true)?;
 
@@ -554,6 +565,7 @@ pub fn empire_set_player_rank(ctx: &ReducerContext, request: EmpireSetPlayerRank
 
 #[spacetimedb::reducer]
 #[shared_table_reducer]
+#[feature_gate("empire")]
 pub fn empire_transfer_emperorship(ctx: &ReducerContext, target_player_entity_id: u64) -> Result<(), String> {
     let actor_id = game_state::actor_id(&ctx, true)?;
 
@@ -587,6 +599,7 @@ pub fn empire_transfer_emperorship(ctx: &ReducerContext, target_player_entity_id
 
 #[spacetimedb::reducer]
 #[shared_table_reducer]
+#[feature_gate("empire")]
 pub fn empire_rename(ctx: &ReducerContext, new_name: String) -> Result<(), String> {
     let actor_id = game_state::actor_id(&ctx, true)?;
 
@@ -666,11 +679,13 @@ pub struct EmpireCraftSuppliesTimer {
 }
 
 #[spacetimedb::reducer]
+#[feature_gate("craft")]
 pub fn empire_craft_supplies_scheduled(ctx: &ReducerContext, timer: EmpireCraftSuppliesTimer) -> Result<(), String> {
     empire_craft_supplies(ctx, timer.foundry_entity_id)
 }
 
 #[spacetimedb::reducer]
+#[feature_gate("craft")]
 pub fn empire_craft_supplies(ctx: &ReducerContext, foundry_entity_id: u64) -> Result<(), String> {
     if !has_role(ctx, &ctx.sender, Role::Admin) {
         return Err("Invalid permissions".into());
@@ -704,6 +719,7 @@ pub fn empire_craft_supplies(ctx: &ReducerContext, foundry_entity_id: u64) -> Re
 
 #[spacetimedb::reducer]
 #[shared_table_reducer]
+#[feature_gate("empire")]
 pub fn empire_mark_for_siege(ctx: &ReducerContext, request: EmpireMarkForSiegeRequest) -> Result<(), String> {
     let actor_id = game_state::actor_id(&ctx, true)?;
 
@@ -721,12 +737,12 @@ pub fn empire_mark_for_siege(ctx: &ReducerContext, request: EmpireMarkForSiegeRe
     //}
 
     let rank = unwrap_or_err!(
-        ctx.db.empire_player_data_state().entity_id().find(&actor_id),
+        ctx.db.empire_player_data_state().entity_id().find(actor_id),
         "You are not a member of an empire"
     );
 
     let node = unwrap_or_err!(
-        ctx.db.empire_node_state().entity_id().find(&request.building_entity_id),
+        ctx.db.empire_node_state().entity_id().find(request.building_entity_id),
         "This building cannot be marked for siege"
     );
     if node.empire_entity_id == rank.empire_entity_id {
@@ -735,6 +751,10 @@ pub fn empire_mark_for_siege(ctx: &ReducerContext, request: EmpireMarkForSiegeRe
 
     if !EmpirePlayerDataState::has_permission(ctx, actor_id, EmpirePermission::FlagWatchtowerToSiege) {
         return Err("You don't have the permissions to flag this watchtower to siege".into());
+    }
+
+    if EmpireNodeSiegeState::has_active_siege(ctx, request.building_entity_id) {
+        return Err("Cannot mark for siege a tower under active conflict".into());
     }
 
     if let Some(siege) = EmpireNodeSiegeState::get(ctx, request.building_entity_id, rank.empire_entity_id) {
@@ -774,6 +794,7 @@ pub fn empire_mark_for_siege(ctx: &ReducerContext, request: EmpireMarkForSiegeRe
 }
 
 #[spacetimedb::reducer]
+#[feature_gate("empire")]
 pub fn empire_set_directive_message(ctx: &ReducerContext, request: EmpireSetDirectiveMessageRequest) -> Result<(), String> {
     let actor_id = game_state::actor_id(&ctx, true)?;
 
@@ -815,6 +836,7 @@ pub fn empire_set_directive_message(ctx: &ReducerContext, request: EmpireSetDire
 
 #[spacetimedb::reducer]
 #[shared_table_reducer]
+#[feature_gate("empire")]
 pub fn empire_donate_shards(ctx: &ReducerContext, request: EmpireDonateShardsRequest) -> Result<(), String> {
     let disabled = true;
     if disabled {
@@ -903,6 +925,7 @@ pub fn empire_donate_shards(ctx: &ReducerContext, request: EmpireDonateShardsReq
 
 #[spacetimedb::reducer]
 #[shared_table_reducer]
+#[feature_gate("empire")]
 pub fn empire_set_nobility_threshold(ctx: &ReducerContext, threshold: i32) -> Result<(), String> {
     let actor_id = game_state::actor_id(&ctx, true)?;
 
@@ -930,6 +953,7 @@ pub fn empire_set_nobility_threshold(ctx: &ReducerContext, threshold: i32) -> Re
 }
 
 #[spacetimedb::reducer]
+#[feature_gate("empire")]
 pub fn empire_change_emblem(ctx: &ReducerContext, request: EmpireChangeEmblemRequest) -> Result<(), String> {
     let actor_id = game_state::actor_id(&ctx, true)?;
 
@@ -953,6 +977,7 @@ pub fn empire_change_emblem(ctx: &ReducerContext, request: EmpireChangeEmblemReq
 
 #[spacetimedb::reducer]
 #[shared_table_reducer]
+#[feature_gate("empire")]
 pub fn empire_take_emperorship(ctx: &ReducerContext) -> Result<(), String> {
     let actor_id = game_state::actor_id(&ctx, true)?;
 
@@ -996,6 +1021,7 @@ pub fn empire_take_emperorship(ctx: &ReducerContext) -> Result<(), String> {
 
 #[spacetimedb::reducer]
 #[shared_table_reducer]
+#[feature_gate("empire")]
 pub fn empire_move_capital(ctx: &ReducerContext, target_claim_entity_id: u64) -> Result<(), String> {
     let actor_id = game_state::actor_id(&ctx, true)?;
     let empire_player_data_state = unwrap_or_err!(
@@ -1119,7 +1145,7 @@ pub fn delete_empire_building(ctx: &ReducerContext, player_entity_id: u64, build
         let region = game_state::region_index_from_entity_id(building_entity_id);
         send_inter_module_message(
             ctx,
-            MessageContents::OnEmpireBuildingDeleted(OnEmpireBuildingDeletedMsg {
+            MessageContentsV2::OnEmpireBuildingDeleted(OnEmpireBuildingDeletedMsg {
                 player_entity_id,
                 building_entity_id,
                 ignore_portals: false,

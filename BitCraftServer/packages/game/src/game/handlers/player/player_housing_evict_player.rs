@@ -1,3 +1,4 @@
+use bitcraft_macro::feature_gate;
 use bitcraft_macro::shared_table_reducer;
 use spacetimedb::{log, ReducerContext, Table};
 
@@ -61,6 +62,7 @@ pub fn player_housing_evict_player_complete(ctx: &ReducerContext, timer: PlayerH
 }
 
 #[spacetimedb::reducer]
+#[feature_gate]
 pub fn player_housing_evict_player(ctx: &ReducerContext, request: PlayerHousingEvictPlayerRequest) -> Result<(), String> {
     let actor_id = game_state::actor_id(&ctx, true)?;
     HealthState::check_incapacitated(ctx, actor_id, true)?;

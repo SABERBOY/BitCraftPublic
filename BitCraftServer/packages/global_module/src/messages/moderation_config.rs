@@ -49,6 +49,8 @@ pub struct ModThresholdState {
 /// Individual flagged word entries, filterable by type.
 /// Suggested word_type values:
 ///   0 = Flagged, 1 = ContextFlagged, 2 = EntityName, 3 = KnownTld, 4 = WhitelistedUrl
+///   5 = WhitelistUsername, 6 = WhitelistBuildingName, 7 = WhitelistClaimName
+///   8 = WhitelistEmpireName, 9 = WhitelistEmpireRankName, 10 = WhitelistSignPost
 #[spacetimedb::table(name = mod_flagged_word_state,
     index(name = word_type, btree(columns = [word_type])))]
 #[derive(Clone, Debug)]

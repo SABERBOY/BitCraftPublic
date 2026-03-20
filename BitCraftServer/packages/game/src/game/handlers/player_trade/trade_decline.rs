@@ -1,3 +1,4 @@
+use bitcraft_macro::feature_gate;
 use spacetimedb::ReducerContext;
 
 use crate::{
@@ -7,6 +8,7 @@ use crate::{
 };
 
 #[spacetimedb::reducer]
+#[feature_gate("trade")]
 pub fn trade_decline(ctx: &ReducerContext, request: PlayerTradeDeclineRequest) -> Result<(), String> {
     let actor_id = game_state::actor_id(&ctx, true)?;
     PlayerTimestampState::refresh(ctx, actor_id, ctx.timestamp);
@@ -35,6 +37,7 @@ pub fn reduce(ctx: &ReducerContext, entity_id: u64, session_entity_id: u64) -> R
 }
 
 #[spacetimedb::reducer]
+#[feature_gate("trade")]
 pub fn trade_cancel_server(ctx: &ReducerContext, session_entity_id: u64, resolution_message: String) -> Result<(), String> {
     ServerIdentity::validate_server_or_admin(&ctx)?;
 

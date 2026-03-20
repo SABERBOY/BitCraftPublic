@@ -1,3 +1,4 @@
+use bitcraft_macro::feature_gate;
 use crate::game::reducer_helpers::footprint_helpers;
 use crate::game::{game_state, permission_helper};
 use crate::messages::action_request::PlayerProjectSiteCancelRequest;
@@ -6,6 +7,7 @@ use crate::unwrap_or_err;
 use spacetimedb::ReducerContext;
 
 #[spacetimedb::reducer]
+#[feature_gate("build")]
 pub fn project_site_cancel(ctx: &ReducerContext, request: PlayerProjectSiteCancelRequest) -> Result<(), String> {
     let actor_id = game_state::actor_id(&ctx, true)?;
 

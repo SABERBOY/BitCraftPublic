@@ -1,3 +1,4 @@
+use bitcraft_macro::feature_gate;
 use crate::building_desc;
 use crate::cargo_desc;
 use crate::game::discovery::Discovery;
@@ -17,6 +18,7 @@ use spacetimedb::ReducerContext;
 use super::inventory_helper;
 
 #[spacetimedb::reducer]
+#[feature_gate]
 pub fn item_stack_move(ctx: &ReducerContext, request: PlayerItemStackMoveRequest) -> Result<(), String> {
     let actor_id = game_state::actor_id(&ctx, true)?;
 

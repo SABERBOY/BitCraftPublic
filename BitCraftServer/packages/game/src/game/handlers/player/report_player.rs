@@ -1,3 +1,4 @@
+use bitcraft_macro::feature_gate;
 use bitcraft_macro::shared_table_reducer;
 use spacetimedb::ReducerContext;
 
@@ -10,6 +11,7 @@ const CONTEXT_SIZE: usize = 5;
 
 #[spacetimedb::reducer]
 #[shared_table_reducer]
+#[feature_gate]
 pub fn report_chat_message(ctx: &ReducerContext, request: ReportPlayerChatMessage) -> Result<(), String> {
     let actor_id = game_state::actor_id(&ctx, true)?;
     let chat = unwrap_or_err!(
@@ -62,6 +64,7 @@ pub fn report_chat_message(ctx: &ReducerContext, request: ReportPlayerChatMessag
 
 #[spacetimedb::reducer]
 #[shared_table_reducer]
+#[feature_gate]
 pub fn report_player(ctx: &ReducerContext, request: ReportPlayerMessage) -> Result<(), String> {
     let actor_id = game_state::actor_id(&ctx, true)?;
     let username = unwrap_or_err!(

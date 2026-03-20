@@ -613,7 +613,22 @@ pub struct EquipmentState {
     pub equipment_slots: Vec<EquipmentSlot>,
 }
 
-#[spacetimedb::table(name = inventory_state, public, 
+#[spacetimedb::table(name = equipment_preset_state, public,
+    index(name = player_entity_id, btree(columns = [player_entity_id])),
+    index(name = player_and_index, btree(columns = [player_entity_id, index])))]
+
+#[derive(Clone, bitcraft_macro::Operations, Debug)]
+#[operations(delete)]
+pub struct EquipmentPresetState {
+    #[primary_key]
+    pub entity_id: u64,
+    pub player_entity_id: u64,
+    pub index: i32,
+    pub active: bool,
+    pub equipment_slots: Vec<EquipmentSlot>,
+}
+
+#[spacetimedb::table(name = inventory_state, public,
     index(name = owner_entity_id, btree(columns = [owner_entity_id])),
     index(name = player_owner_entity_id, btree(columns = [player_owner_entity_id])))]
 #[derive(Clone, PartialEq, Debug, bitcraft_macro::Operations)]
@@ -1030,6 +1045,16 @@ pub struct CombatState {
     pub global_cooldown: Option<ActionCooldown>,
 }
 
+#[spacetimedb::table(name = combat_immunity_state, public)]
+#[derive(Clone, bitcraft_macro::Operations, Debug)]
+#[operations(delete)]
+pub struct CombatImmunityState {
+    #[primary_key]
+    pub entity_id: u64,
+    pub immunity_end_timestamp: Timestamp,
+    pub crumb_trail_entity_id: Option<u64>,     // If set, only players prospecting this crumb trail can hit the target
+}
+
 #[spacetimedb::table(name = threat_state, public, 
     index(name = owner_entity_id, btree(columns = [owner_entity_id])), 
     index(name = target_entity_id, btree(columns = [target_entity_id])))]
@@ -1076,7 +1101,7 @@ pub struct AttackOutcomeState {
     pub dodge_result: bool,
 }
 
-#[spacetimedb::table(name = extract_outcome_state, public)]
+#[spacetimedb::table(name = extract_outcome_state_v1, public)]  // [FINAL RELEASE] Obsolete, remove.
 #[derive(Clone, bitcraft_macro::Operations, Debug)]
 #[operations(delete)]
 pub struct ExtractOutcomeState {
@@ -1086,6 +1111,20 @@ pub struct ExtractOutcomeState {
     pub last_timestamp: Timestamp, // to catch an update if all the values are the same
     pub damage: i32,
 }
+
+#[spacetimedb::table(name = extract_outcome_state, public)]
+#[derive(Clone, bitcraft_macro::Operations, Debug)]
+#[operations(delete)]
+pub struct ExtractOutcomeStateV2 {
+    #[primary_key]
+    pub entity_id: u64,         // set on the player's to optimize due to the large amount of resources
+    pub target_entity_id: u64,   // resource's
+    pub last_timestamp: Timestamp, // to catch an update if all the values are the same
+    pub damage: i32,
+    #[default(false)]
+    pub is_crit: bool,
+}
+
 
 
 #[spacetimedb::table(name = targetable_state, public)]
@@ -1392,6 +1431,12 @@ pub struct Threat {
     pub amount: f32,
 }
 
+#[derive(SpacetimeType, Clone, Debug)]
+pub struct ProspectingParticipant {
+    pub player_name: String,
+    pub node: i32,
+}
+
 #[spacetimedb::table(name = passive_craft_state, public, 
     index(name = building_entity_id, btree(columns = [building_entity_id])), 
     index(name = owner_entity_id, btree(columns = [owner_entity_id])))]
@@ -1498,7 +1543,8 @@ pub struct AutoClaimState {
 }
 
 #[spacetimedb::table(name = herd_state, public, index(name = enemy_ai_params_desc_id, btree(columns = [enemy_ai_params_desc_id])))]
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, bitcraft_macro::Operations)]
+#[operations(delete)]
 pub struct HerdState {
     #[primary_key]
     pub entity_id: u64,
@@ -2012,7 +2058,19 @@ pub struct ProspectingState {
     pub next_crumb_angle: Vec<f32>,
     pub last_prospection_timestamp: Timestamp,    // force an update callback on consecutive misses
     pub contribution: i32,
+    #[default(0.0)]
+    pub to_next_node: f32,     // for now, tiles. We can change this for a percentage if we want to obfuscate the destination
 }
+
+#[spacetimedb::table(name = crumb_trail_exposed_state, public)]
+#[derive(Clone, Debug)]
+pub struct CrumbTrailExposedState {
+    #[primary_key]
+    pub crumb_trail_entity_id: u64,
+    pub exposed_locations: Vec<OffsetCoordinatesSmallMessage>,
+    pub exposed_herd_entity_id: u64,
+}
+
 
 #[spacetimedb::table(name = crumb_trail_state)]
 #[derive(Clone, Debug)]

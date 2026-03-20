@@ -1,3 +1,4 @@
+use bitcraft_macro::feature_gate;
 use spacetimedb::{ReducerContext, Table};
 
 use crate::{
@@ -6,6 +7,7 @@ use crate::{
 };
 
 #[spacetimedb::reducer]
+#[feature_gate]
 pub fn set_visibility(ctx: &ReducerContext, visibility: VisibilityType) -> Result<(), String> {
     let actor_id = game_state::actor_id(&ctx, true)?;
 

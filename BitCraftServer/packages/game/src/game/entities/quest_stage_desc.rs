@@ -9,12 +9,12 @@ impl QuestStageDesc {
             match cond {
                 CompletionCondition::PaddingNone(_) => {},
                 CompletionCondition::ItemStack(c) => {
-                    let inventory = unwrap_or_err!(InventoryState::get_player_inventory(ctx, player_entity_id), "Player has no inventory");
-                    let wallet = unwrap_or_err!(InventoryState::get_player_wallet(ctx, player_entity_id), "Player has no wallet");
                     let stack = vec![c.item_stack];
-                    if !inventory.has(&stack) && !wallet.has(&stack){
+
+                    if !InventoryState::has_items_in_player_inventory_and_nearby_deployables(ctx, player_entity_id, &stack, |_| 0)? {
                         return Err("Missing required items.".into());
                     }
+
                     if c.is_consumed {
                         InventoryState::withdraw_from_player_inventory_and_nearby_deployables(ctx, player_entity_id, &stack, |_| 0)?;
                     }

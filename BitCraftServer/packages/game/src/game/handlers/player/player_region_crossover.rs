@@ -1,3 +1,4 @@
+use bitcraft_macro::feature_gate;
 use crate::game::coordinates::hex_coordinates::HexCoordinates;
 use crate::game::coordinates::offset_coordinates::OffsetCoordinates;
 use crate::game::coordinates::region_coordinates::RegionCoordinates;
@@ -12,6 +13,7 @@ use crate::{
 use spacetimedb::{ReducerContext, Table};
 
 #[spacetimedb::reducer]
+#[feature_gate]
 pub fn player_region_crossover(ctx: &ReducerContext) -> Result<(), String> {
     let actor_id = game_state::actor_id(&ctx, true)?;
     HealthState::check_incapacitated(ctx, actor_id, true)?;

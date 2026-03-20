@@ -1,3 +1,4 @@
+use bitcraft_macro::feature_gate;
 use std::time::Duration;
 
 use spacetimedb::{ReducerContext, Table};
@@ -32,6 +33,7 @@ pub struct PlayerUseElevatorTimer {
 }
 
 #[spacetimedb::reducer]
+#[feature_gate]
 pub fn player_use_elevator(ctx: &ReducerContext, platform_entity_id: u64) -> Result<(), String> {
     let actor_id = game_state::actor_id(&ctx, true)?;
     HealthState::check_incapacitated(ctx, actor_id, true)?;
@@ -112,6 +114,7 @@ pub fn player_use_elevator(ctx: &ReducerContext, platform_entity_id: u64) -> Res
 }
 
 #[spacetimedb::reducer]
+#[feature_gate]
 pub fn player_elevator_arrive(ctx: &ReducerContext, timer: PlayerUseElevatorTimer) -> Result<(), String> {
     ServerIdentity::validate_server_or_admin(&ctx)?;
     player_action_helpers::schedule_clear_player_action(

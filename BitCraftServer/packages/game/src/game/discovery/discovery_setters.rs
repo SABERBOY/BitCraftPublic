@@ -280,6 +280,7 @@ impl Discovery {
                 .filter(knowledge_id)
                 .map(|r| ctx.db.pillar_shaping_desc().id().find(r.recipe_id).unwrap()),
         );
+        EquipmentPresetState::on_knowledge_acquired(ctx, self.player_entity_id, knowledge_id);
     }
 
     fn evaluate_craft_discoveries<I>(&mut self, ctx: &ReducerContext, recipes: I)

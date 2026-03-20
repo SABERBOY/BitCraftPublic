@@ -1,3 +1,4 @@
+use bitcraft_macro::feature_gate;
 use crate::game::game_state::game_state_filters;
 use crate::game::reducer_helpers::deployable_helpers::{
     dismount_deployable_and_explore, dismount_deployable_and_explore_and_set_deployable_position,
@@ -23,6 +24,7 @@ pub struct DeployableDismountTimer {
 }
 
 #[spacetimedb::reducer]
+#[feature_gate]
 fn deployable_dismount_scheduled(ctx: &ReducerContext, timer: DeployableDismountTimer) -> Result<(), String> {
     deployable_dismount_server(
         ctx,
@@ -37,6 +39,7 @@ fn deployable_dismount_scheduled(ctx: &ReducerContext, timer: DeployableDismount
 }
 
 #[spacetimedb::reducer]
+#[feature_gate]
 pub fn deployable_dismount_server(ctx: &ReducerContext, request: PlayerDeployableDismountRequest) -> Result<(), String> {
     // This request can only come from the server (as a result of a deployable being stored)
     ServerIdentity::validate_server_only(&ctx)?;
@@ -70,6 +73,7 @@ pub fn deployable_dismount_server(ctx: &ReducerContext, request: PlayerDeployabl
 }
 
 #[spacetimedb::reducer]
+#[feature_gate]
 pub fn deployable_dismount(
     ctx: &ReducerContext,
     coordinates: OffsetCoordinatesFloat,

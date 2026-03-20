@@ -1,3 +1,4 @@
+use bitcraft_macro::feature_gate;
 use spacetimedb::{ReducerContext, Table};
 
 use crate::{
@@ -7,6 +8,7 @@ use crate::{
 };
 
 #[spacetimedb::reducer]
+#[feature_gate]
 pub fn join_chat_channel(ctx: &ReducerContext, entity_id: u64) -> Result<(), String> {
     let chat_channel = unwrap_or_err!(ctx.db.chat_channel_state().entity_id().find(&entity_id), "Invalid chat channel");
 

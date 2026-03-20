@@ -3,8 +3,9 @@ use bitcraft_macro::shared_table;
 use crate::messages::game_util::PocketKey;
 
 use super::util::OffsetCoordinatesSmallMessage;
+use strum_macros::EnumIter;
 
-#[derive(spacetimedb::SpacetimeType, Clone, Copy, PartialEq, Debug)]
+#[derive(spacetimedb::SpacetimeType, EnumIter, Clone, Copy, PartialEq, Debug)]
 #[sats(name = "EmpirePermission")]
 #[repr(i32)]
 pub enum EmpirePermission {
@@ -12,11 +13,12 @@ pub enum EmpirePermission {
     CollectHexiteCapsule = 1,
     BuildWatchtower = 2,
     FlagWatchtowerToSiege = 3,
-    AproveEmpireSubmissions = 4,
+    AproveEmpireSubmissions = 4,    // [FINAL RELEASE] fix typo
     PromoteLesserRanks = 5,
     CraftHexiteCapsule = 6,
-    Count,
-    // CollectSiegeSupplies = 7,
+    Count,          // DO NOT USE [FINAL RELEASE] get rid of 'Count' as it's not migration-friendly.
+    HarvestEmpireResources,
+    WithdrawEmpireCurrency,
 }
 
 #[derive(spacetimedb::SpacetimeType, Clone, Copy, PartialEq, Debug)]

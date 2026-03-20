@@ -15,6 +15,7 @@ pub mod reducer_helpers;
 pub mod static_data;
 pub mod terrain_chunk;
 pub mod unity_helpers;
+pub mod views;
 pub mod world_gen;
 
 pub const PLAYER_MIN_SWIM_DEPTH: i16 = 5;

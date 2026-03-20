@@ -1,3 +1,4 @@
+use bitcraft_macro::feature_gate;
 use spacetimedb::ReducerContext;
 
 use crate::game::coordinates::*;
@@ -11,7 +12,7 @@ use crate::{game_state, params};
 use crate::{parameters_desc, unwrap_or_err};
 
 #[spacetimedb::reducer]
-
+#[feature_gate]
 pub fn retrieve_lost_item(ctx: &ReducerContext, request: PlayerRetrieveLostItemRequest) -> Result<(), String> {
     let actor_id = game_state::actor_id(&ctx, true)?;
     HealthState::check_incapacitated(ctx, actor_id, true)?;

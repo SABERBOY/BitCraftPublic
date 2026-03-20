@@ -1,3 +1,4 @@
+use bitcraft_macro::feature_gate;
 use spacetimedb::{ReducerContext, Table};
 
 use crate::{
@@ -13,6 +14,7 @@ use crate::{
 use crate::game::handlers::authentication::has_role;
 
 #[spacetimedb::reducer]
+#[feature_gate("combat")]
 pub fn target_update(ctx: &ReducerContext, request: TargetUpdateRequest) -> Result<(), String> {
     if let Ok(actor_id) = game_state::actor_id(&ctx, false) {
         if actor_id != request.owner_entity_id {

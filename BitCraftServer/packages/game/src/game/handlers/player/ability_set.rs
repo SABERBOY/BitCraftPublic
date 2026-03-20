@@ -1,9 +1,11 @@
+use bitcraft_macro::feature_gate;
 use spacetimedb::{ReducerContext, Table};
 
 use crate::game::game_state;
 use crate::messages::components::{ability_state, action_bar_state, AbilityState, AbilityType, ActionBarState, ActionCooldown};
 
 #[spacetimedb::reducer]
+#[feature_gate]
 pub fn ability_set(ctx: &ReducerContext, action_bar_index: u8, local_ability_index: u8, ability: AbilityType) -> Result<(), String> {
     let actor_id = game_state::actor_id(&ctx, true)?;
     reduce(ctx, actor_id, action_bar_index, local_ability_index as i8, ability)

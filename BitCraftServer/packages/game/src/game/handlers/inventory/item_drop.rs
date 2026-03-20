@@ -1,3 +1,4 @@
+use bitcraft_macro::feature_gate;
 use crate::game::game_state::{self, game_state_filters};
 use crate::game::permission_helper;
 use crate::game::reducer_helpers::loot_chest_helpers;
@@ -11,6 +12,7 @@ use spacetimedb::ReducerContext;
 use super::inventory_helper;
 
 #[spacetimedb::reducer]
+#[feature_gate]
 pub fn item_drop(ctx: &ReducerContext, request: PlayerItemDropRequest) -> Result<(), String> {
     let actor_id = game_state::actor_id(&ctx, true)?;
 
@@ -22,14 +24,37 @@ pub fn item_drop(ctx: &ReducerContext, request: PlayerItemDropRequest) -> Result
 
     let item_stack;
 
-    if request.pocket.inventory_entity_id == 0 {
+    // Terrible, terrible hack: inventory_entity_id 0 => Equipment, < 100 => Equipment Preset Index
+    if request.pocket.inventory_entity_id < 100 {
         // Equipment slot
         let mut equipment = unwrap_or_err!(ctx.db.equipment_state().entity_id().find(actor_id), "Invalid Equipment State");
-        if let Some(slot) = equipment.equipment_slots.get(request.pocket.pocket_index as usize) {
+        let equipment_slots;
+        let mut equipment_preset = None;
+        if request.pocket.inventory_entity_id == 0 {
+            equipment_slots = &mut equipment.equipment_slots;
+        } else {
+            equipment_preset = ctx
+                .db
+                .equipment_preset_state()
+                .player_and_index()
+                .filter((actor_id, request.pocket.inventory_entity_id as i32))
+                .next();
+            if equipment_preset.is_none() {
+                return Err("Invalid Equipment Preset".into());
+            }
+            equipment_slots = &mut equipment_preset.as_mut().unwrap().equipment_slots;
+        }
+
+        if let Some(slot) = equipment_slots.get(request.pocket.pocket_index as usize) {
             if let Some(item) = slot.item {
                 item_stack = item;
-                equipment.equipment_slots[request.pocket.pocket_index as usize].item = None;
-                ctx.db.equipment_state().entity_id().update(equipment);
+                equipment_slots[request.pocket.pocket_index as usize].item = None;
+
+                if request.pocket.inventory_entity_id == 0 {
+                    ctx.db.equipment_state().entity_id().update(equipment);
+                } else {
+                    ctx.db.equipment_preset_state().entity_id().update(equipment_preset.unwrap());
+                }
                 PlayerState::collect_stats(ctx, actor_id);
             } else {
                 return Err("Nothing equipped on this slot".into());

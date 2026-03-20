@@ -1,3 +1,4 @@
+use bitcraft_macro::feature_gate;
 use spacetimedb::{ReducerContext, Timestamp};
 
 use crate::{
@@ -18,6 +19,7 @@ pub struct ClaimTechUnlockTimer {
 }
 
 #[spacetimedb::reducer]
+#[feature_gate]
 pub fn claim_tech_unlock_tech(ctx: &ReducerContext, timer: ClaimTechUnlockTimer) -> Result<(), String> {
     ServerIdentity::validate_server_or_admin(&ctx)?;
 

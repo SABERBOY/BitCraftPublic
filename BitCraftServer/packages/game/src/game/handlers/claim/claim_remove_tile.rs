@@ -1,3 +1,4 @@
+use bitcraft_macro::feature_gate;
 use std::collections::HashSet;
 
 use spacetimedb::ReducerContext;
@@ -15,6 +16,7 @@ use crate::{
 };
 
 #[spacetimedb::reducer]
+#[feature_gate]
 pub fn claim_remove_tile(ctx: &ReducerContext, request: PlayerClaimRemoveTileRequest) -> Result<(), String> {
     let actor_id = game_state::actor_id(&ctx, true)?;
     PlayerTimestampState::refresh(ctx, actor_id, ctx.timestamp);

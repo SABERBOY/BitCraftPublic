@@ -1,3 +1,4 @@
+use bitcraft_macro::feature_gate;
 use crate::game::game_state;
 use crate::messages::action_request::PlayerClaimTransferOwnershipRequest;
 use crate::messages::components::*;
@@ -7,6 +8,7 @@ use spacetimedb::ReducerContext;
 
 #[spacetimedb::reducer]
 #[shared_table_reducer]
+#[feature_gate]
 pub fn claim_transfer_ownership(ctx: &ReducerContext, request: PlayerClaimTransferOwnershipRequest) -> Result<(), String> {
     let actor_id = game_state::actor_id(&ctx, true)?;
     PlayerTimestampState::refresh(ctx, actor_id, ctx.timestamp);

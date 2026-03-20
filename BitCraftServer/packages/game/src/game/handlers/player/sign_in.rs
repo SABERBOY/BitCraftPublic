@@ -1,3 +1,4 @@
+use bitcraft_macro::feature_gate;
 use bitcraft_macro::shared_table_reducer;
 use spacetimedb::{log, ReducerContext, Table};
 
@@ -20,6 +21,7 @@ use crate::{
 
 #[spacetimedb::reducer]
 #[shared_table_reducer]
+#[feature_gate]
 pub fn sign_in(ctx: &ReducerContext, _request: PlayerSignInRequest) -> Result<(), String> {
     let actor_id = game_state::actor_id(&ctx, false)?;
     PlayerTimestampState::refresh(ctx, actor_id, ctx.timestamp);

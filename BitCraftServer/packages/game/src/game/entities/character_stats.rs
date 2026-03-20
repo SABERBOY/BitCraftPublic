@@ -1,3 +1,4 @@
+use spacetimedb::rand::Rng;
 use spacetimedb::{ReducerContext, Table};
 
 use crate::character_stats_state;
@@ -49,7 +50,39 @@ impl CharacterStatsState {
         if let Some(stat) = Self::stat_for_skill_power(skill) {
             return self.get(stat);
         }
+        0f32
+    }
+
+    pub fn get_skill_crit_chance(&self, skill: SkillType) -> f32 {
+        if let Some(stat) = Self::stat_for_crit_chance(skill) {
+            return self.get(stat);
+        }
+        0f32
+    }
+
+    pub fn get_skill_crit_multiplier(&self, skill: SkillType) -> f32 {
+        if let Some(stat) = Self::stat_for_crit_multiplier(skill) {
+            return 1.0 + self.get(stat);
+        }
         1f32
+    }
+
+    pub fn get_final_crit_multiplier(&self, ctx: &ReducerContext, skill: Option<SkillType>) -> f32 {
+        let crit_chance = match skill {
+            Some(skill) => self.get_skill_crit_chance(skill),
+            None => 0.0,
+        };
+        let crit_multiplier = match skill {
+            Some(skill) => self.get_skill_crit_multiplier(skill),
+            None => 1.0,
+        };
+
+        // crit_multiplier from now on is applied to the damage, whether the crit happened (previous value) or not (1.0)
+        if ctx.rng().gen_range(0f32..=1f32) <= crit_chance {
+            crit_multiplier
+        } else {
+            1.0
+        }
     }
 
     pub fn equals(&self, other: &CharacterStatsState) -> bool {
@@ -86,6 +119,7 @@ impl CharacterStatsState {
             SkillType::Fishing => Some(CharacterStatType::FishingSpeed),
             SkillType::Cooking => Some(CharacterStatType::CookingSpeed),
             SkillType::Foraging => Some(CharacterStatType::ForagingSpeed),
+            SkillType::HexiteGathering => Some(CharacterStatType::HexiteGatheringSpeed),
             _ => None,
         }
     }
@@ -107,6 +141,51 @@ impl CharacterStatsState {
             SkillType::Cooking => Some(CharacterStatType::CookingPower),
             SkillType::Foraging => Some(CharacterStatType::ForagingPower),
             SkillType::Construction => Some(CharacterStatType::ConstructionPower),
+            SkillType::HexiteGathering => Some(CharacterStatType::HexiteGatheringPower),
+            _ => None,
+        }
+    }
+
+    fn stat_for_crit_chance(skill: SkillType) -> Option<CharacterStatType> {
+        //DAB Note: this is temporary, see comment inside `SkillType` definition
+        match skill {
+            SkillType::Forestry => Some(CharacterStatType::ForestryCritChance),
+            SkillType::Carpentry => Some(CharacterStatType::CarpentryCritChance),
+            SkillType::Masonry => Some(CharacterStatType::MasonryCritChance),
+            SkillType::Mining => Some(CharacterStatType::MiningCritChance),
+            SkillType::Smithing => Some(CharacterStatType::SmithingCritChance),
+            SkillType::Scholar => Some(CharacterStatType::ScholarCritChance),
+            SkillType::Leatherworking => Some(CharacterStatType::LeatherworkingCritChance),
+            SkillType::Hunting => Some(CharacterStatType::HuntingCritChance),
+            SkillType::Tailoring => Some(CharacterStatType::TailoringCritChance),
+            SkillType::Farming => Some(CharacterStatType::FarmingCritChance),
+            SkillType::Fishing => Some(CharacterStatType::FishingCritChance),
+            SkillType::Cooking => None,
+            SkillType::Foraging => Some(CharacterStatType::ForagingCritChance),
+            SkillType::Construction => None,
+            SkillType::HexiteGathering => Some(CharacterStatType::HexiteGatheringCritChance),
+            _ => None,
+        }
+    }
+
+    fn stat_for_crit_multiplier(skill: SkillType) -> Option<CharacterStatType> {
+        //DAB Note: this is temporary, see comment inside `SkillType` definition
+        match skill {
+            SkillType::Forestry => Some(CharacterStatType::ForestryCritMultiplier),
+            SkillType::Carpentry => Some(CharacterStatType::CarpentryCritMultiplier),
+            SkillType::Masonry => Some(CharacterStatType::MasonryCritMultiplier),
+            SkillType::Mining => Some(CharacterStatType::MiningCritMultiplier),
+            SkillType::Smithing => Some(CharacterStatType::SmithingCritMultiplier),
+            SkillType::Scholar => Some(CharacterStatType::ScholarCritMultiplier),
+            SkillType::Leatherworking => Some(CharacterStatType::LeatherworkingCritMultiplier),
+            SkillType::Hunting => Some(CharacterStatType::HuntingCritMultiplier),
+            SkillType::Tailoring => Some(CharacterStatType::TailoringCritMultiplier),
+            SkillType::Farming => Some(CharacterStatType::FarmingCritMultiplier),
+            SkillType::Fishing => Some(CharacterStatType::FishingCritMultiplier),
+            SkillType::Cooking => None,
+            SkillType::Foraging => Some(CharacterStatType::ForagingCritMultiplier),
+            SkillType::Construction => None,
+            SkillType::HexiteGathering => Some(CharacterStatType::HexiteGatheringCritMultiplier),
             _ => None,
         }
     }

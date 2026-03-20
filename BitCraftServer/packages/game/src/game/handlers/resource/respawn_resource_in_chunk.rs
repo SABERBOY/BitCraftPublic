@@ -1,3 +1,4 @@
+use bitcraft_macro::feature_gate;
 use spacetimedb::{log, rand::Rng, ReducerContext};
 
 use crate::{
@@ -24,6 +25,7 @@ pub struct RespawnResourceInChunkTimer {
 }
 
 #[spacetimedb::reducer]
+#[feature_gate]
 pub fn respawn_resource_in_chunk(ctx: &ReducerContext, timer: RespawnResourceInChunkTimer) -> Result<(), String> {
     if !has_role(ctx, &ctx.sender, Role::Admin) {
         return Err("Invalid permissions".into());

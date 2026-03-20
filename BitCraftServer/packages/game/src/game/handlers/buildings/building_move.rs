@@ -1,3 +1,4 @@
+use bitcraft_macro::feature_gate;
 use bitcraft_macro::shared_table_reducer;
 use spacetimedb::ReducerContext;
 
@@ -18,6 +19,7 @@ use crate::{
 
 #[shared_table_reducer]
 #[spacetimedb::reducer]
+#[feature_gate("build")]
 pub fn building_move(ctx: &ReducerContext, request: PlayerBuildingMoveRequest) -> Result<(), String> {
     let actor_id = game_state::actor_id(&ctx, true)?;
     PlayerTimestampState::refresh(ctx, actor_id, ctx.timestamp);

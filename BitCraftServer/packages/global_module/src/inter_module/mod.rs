@@ -1,6 +1,6 @@
 use crate::messages::{
     generic::world_region_state,
-    inter_module::{inter_module_message, InterModuleMessage, MessageContents},
+    inter_module::{inter_module_message_v2, InterModuleMessageV2, MessageContentsV2},
 };
 use _autogen::InterModuleTableUpdates;
 use spacetimedb::{ReducerContext, Table};
@@ -22,6 +22,7 @@ pub mod empire_queue_supplies;
 pub mod empire_resupply_node;
 pub mod empire_siege_add_supplies;
 pub mod empire_start_siege;
+pub mod empire_withdraw_item;
 pub mod global_delete_empire_building;
 pub mod grant_hub_item;
 pub mod npc_place_watchtowers;
@@ -50,7 +51,8 @@ enum InterModuleAccumulator {
 
 thread_local! {
     static TABLE_UPDATES_OTHER_REGIONS: RefCell<InterModuleAccumulator> = RefCell::new(InterModuleAccumulator::None);
-    static DELAYED_MESSAGES: RefCell<Vec<(crate::messages::inter_module::MessageContents, crate::inter_module::InterModuleDestination)>> = RefCell::new(Vec::new());
+    static DELAYED_MESSAGES: RefCell<Vec<(crate::messages::inter_module::MessageContentsV2, crate::inter_module::InterModuleDestination)>> = RefCell::new(Vec::new());
+    static TIMESTAMP: RefCell<i64> = RefCell::new(0);
 }
 
 #[derive(Clone, Copy)]
@@ -63,11 +65,19 @@ pub enum InterModuleDestination {
 
 impl SharedTransactionAccumulator<'_> {
     pub fn begin_shared_transaction(&self) {
+        let ts = self.ctx.timestamp.to_micros_since_unix_epoch();
+
         TABLE_UPDATES_OTHER_REGIONS.with_borrow_mut(|t| {
             match t {
                 InterModuleAccumulator::Uninitialized |
-                InterModuleAccumulator::Initialized(_) =>  
-                    spacetimedb::log::warn!("There already is a pending shared transaction that will be overwritten. This might've been caused by previous shared reducer panic, or you may be calling `begin_shared_transaction_impl` twice."),
+                InterModuleAccumulator::Initialized(_) => {
+                    if TIMESTAMP.with_borrow(|t| *t == ts) {
+                        spacetimedb::log::error!("Function with `#[shared_table_reducer]` attribute called by another shared reducer. This **WILL** cause a panic.");
+                    }
+                    else {
+                        spacetimedb::log::warn!("There is already a pending shared transaction that will be overwritten. This might've been caused by previous shared reducer panic.");
+                    }
+                },
                 InterModuleAccumulator::None => {}
             }
             *t = InterModuleAccumulator::Uninitialized;
@@ -75,10 +85,17 @@ impl SharedTransactionAccumulator<'_> {
 
         DELAYED_MESSAGES.with_borrow_mut(|v| {
             if v.len() > 0 {
-                spacetimedb::log::warn!("There are inter-module messages that were never sent and will now be cleared. This might've been caused by previous shared reducer panic, or you may be calling `begin_shared_transaction_impl` twice.");
+                if TIMESTAMP.with_borrow(|t| *t == ts) {
+                    spacetimedb::log::error!("Function with `#[shared_table_reducer]` attribute called by another shared reducer. This **WILL** cause a panic.");
+                }
+                else {
+                    spacetimedb::log::warn!("There are inter-module messages that were never sent and will now be cleared. This might've been caused by previous shared reducer panic.");
+                }
                 v.clear();
             }
         });
+
+        TIMESTAMP.set(ts);
     }
 
     pub fn send_shared_transaction(&self) {
@@ -91,10 +108,10 @@ impl SharedTransactionAccumulator<'_> {
                     if i == cur_region {
                         continue;
                     }
-                    self.ctx.db.inter_module_message().insert(InterModuleMessage {
+                    self.ctx.db.inter_module_message_v2().insert(InterModuleMessageV2 {
                         id: 0,
                         to: i,
-                        contents: MessageContents::TableUpdate(a.clone()),
+                        contents: MessageContentsV2::TableUpdate(a.clone()),
                     });
                 }
             }
@@ -107,6 +124,8 @@ impl SharedTransactionAccumulator<'_> {
             }
             v.clear();
         });
+
+        TIMESTAMP.set(0);
     }
 }
 
@@ -136,7 +155,7 @@ where
 
 pub fn send_inter_module_message(
     ctx: &ReducerContext,
-    contents: crate::messages::inter_module::MessageContents,
+    contents: crate::messages::inter_module::MessageContentsV2,
     dst: crate::inter_module::InterModuleDestination,
 ) {
     let is_none = TABLE_UPDATES_OTHER_REGIONS.with_borrow(|t| if let InterModuleAccumulator::None = t { true } else { false });
@@ -158,7 +177,7 @@ pub fn send_inter_module_message(
             let region_info = ctx.db.world_region_state().iter().next().unwrap();
             let region_count = region_info.region_count;
             for i in 1..=region_count {
-                ctx.db.inter_module_message().insert(InterModuleMessage {
+                ctx.db.inter_module_message_v2().insert(InterModuleMessageV2 {
                     id: 0,
                     to: i,
                     contents: contents.clone(),
@@ -180,8 +199,8 @@ pub fn send_inter_module_message(
         }
 
         ctx.db
-            .inter_module_message()
-            .insert(crate::messages::inter_module::InterModuleMessage {
+            .inter_module_message_v2()
+            .insert(crate::messages::inter_module::InterModuleMessageV2 {
                 id: 0,
                 to: region_id,
                 contents: contents,

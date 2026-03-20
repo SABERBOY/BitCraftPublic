@@ -1,3 +1,4 @@
+use bitcraft_macro::feature_gate;
 use regex::Regex;
 use spacetimedb::{ReducerContext, Table};
 
@@ -10,13 +11,14 @@ use crate::{
         authentication::Role,
         components::*,
         global::user_region_state,
-        inter_module::{MessageContents, OnPlayerNameSetMsg},
+        inter_module::{MessageContentsV2, OnPlayerNameSetMsg},
         static_data::reserved_name_desc,
     },
     unwrap_or_err,
 };
 
 #[spacetimedb::reducer]
+#[feature_gate]
 pub fn player_set_name(ctx: &ReducerContext, request: PlayerSetNameRequest) -> Result<(), String> {
     let actor_id = game_state::actor_id(&ctx, true)?;
 
@@ -75,7 +77,7 @@ pub fn reduce(ctx: &ReducerContext, entity_id: u64, username: String) -> Result<
     };
     send_inter_module_message(
         ctx,
-        MessageContents::OnPlayerNameSetRequest(msg),
+        MessageContentsV2::OnPlayerNameSetRequest(msg),
         InterModuleDestination::Region(player_region),
     );
 

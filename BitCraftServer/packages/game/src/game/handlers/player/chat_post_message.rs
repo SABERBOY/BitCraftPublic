@@ -1,3 +1,4 @@
+use bitcraft_macro::feature_gate;
 use spacetimedb::{ReducerContext, Table};
 
 use crate::game::game_state::{self, create_entity, unix};
@@ -9,6 +10,7 @@ use crate::messages::static_data::CollectibleType;
 use crate::{collectible_desc, i18n, unwrap_or_err};
 
 #[spacetimedb::reducer]
+#[feature_gate]
 pub fn chat_post_message(ctx: &ReducerContext, request: PlayerChatPostMessageRequest) -> Result<(), String> {
     let actor_id = game_state::actor_id(&ctx, true)?;
     PlayerTimestampState::refresh(ctx, actor_id, ctx.timestamp);

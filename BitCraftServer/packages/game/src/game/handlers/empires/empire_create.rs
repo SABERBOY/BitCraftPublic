@@ -1,3 +1,4 @@
+use bitcraft_macro::feature_gate;
 use spacetimedb::ReducerContext;
 
 use crate::messages::static_data::*;
@@ -19,6 +20,7 @@ use crate::{
 };
 
 #[spacetimedb::reducer]
+#[feature_gate("empire")]
 pub fn empire_create(ctx: &ReducerContext, request: EmpireCreateRequest) -> Result<(), String> {
     let actor_id = game_state::actor_id(&ctx, true)?;
 
@@ -84,7 +86,7 @@ pub fn empire_create(ctx: &ReducerContext, request: EmpireCreateRequest) -> Resu
 
     send_inter_module_message(
         ctx,
-        crate::messages::inter_module::MessageContents::EmpireCreate(EmpireCreateMsg {
+        crate::messages::inter_module::MessageContentsV2::EmpireCreate(EmpireCreateMsg {
             player_entity_id: actor_id,
             building_entity_id: request.building_entity_id,
             color1_id: request.color1_id,

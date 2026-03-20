@@ -402,6 +402,23 @@ impl InventoryState {
         }
     }
 
+    pub fn count_item_quantity(&self, item_id: i32, item_type: ItemType) -> i32 {
+        let mut count = 0;
+        for p in self.pockets.iter() {
+            count += match &p.contents {
+                Some(c) => {
+                    if c.item_id == item_id && c.item_type == item_type {
+                        c.quantity
+                    } else {
+                        0
+                    }
+                }
+                None => 0,
+            };
+        }
+        count
+    }
+
     pub fn has(&self, item_stacks: &Vec<ItemStack>) -> bool {
         if item_stacks.len() == 0 {
             return true;
@@ -409,21 +426,7 @@ impl InventoryState {
 
         let merged_stacks = ItemStack::merge_multiple(item_stacks);
         for stack in merged_stacks {
-            let mut required = stack.quantity;
-            for p in self.pockets.iter() {
-                required -= match &p.contents {
-                    Some(c) => {
-                        if c.item_id == stack.item_id {
-                            c.quantity
-                        } else {
-                            0
-                        }
-                    }
-                    None => 0,
-                };
-            }
-
-            if required > 0 {
+            if stack.quantity > self.count_item_quantity(stack.item_id, stack.item_type) {
                 return false;
             }
         }
@@ -1257,6 +1260,57 @@ impl InventoryState {
 
         inventories_with_distance.sort_by(|a, b| a.1.cmp(&b.1));
         return inventories_with_distance.into_iter().map(|x| x.0).collect();
+    }
+
+    pub fn has_items_in_player_inventory_and_nearby_deployables<TDistanceFn>(
+        ctx: &ReducerContext,
+        player_entity_id: u64,
+        item_stacks: &Vec<ItemStack>,
+        get_distance_fn: TDistanceFn,
+    ) -> Result<bool, String>
+    where
+        TDistanceFn: Fn(SmallHexTile) -> i32,
+    {
+        if item_stacks.iter().any(|i| i.quantity < 0) {
+            return Err("Invalid request.".into());
+        }
+
+        let player_inventory = unwrap_or_err!(
+            InventoryState::get_player_inventory(ctx, player_entity_id),
+            "Player has no inventory"
+        );
+
+        // Check inventory first
+        if player_inventory.has(item_stacks) {
+            return Ok(true);
+        }
+
+        //Find the player's nearby deployables and get their inventories
+        let max_distance = ctx.db.parameters_desc().version().find(&0).unwrap().withdraw_from_deployables_range;
+        let mut inventories = Self::get_nearby_deployable_inventories(ctx, player_entity_id, get_distance_fn, max_distance);
+
+        if inventories.len() == 0 {
+            return Ok(false);
+        }
+
+        let player_wallet = unwrap_or_err!(InventoryState::get_player_wallet(ctx, player_entity_id), "Player has no wallet");
+
+        inventories.insert(0, player_wallet);
+        inventories.insert(1, player_inventory);
+
+        // Count up total quantity of each item across all inventories
+        for item_stack in item_stacks {
+            let mut count = 0;
+            for inventory in inventories.iter() {
+                count += inventory.count_item_quantity(item_stack.item_id, item_stack.item_type);
+            }
+
+            if item_stack.quantity > count {
+                return Ok(false);
+            }
+        }
+
+        Ok(true)
     }
 
     pub fn withdraw_from_player_inventory_and_nearby_deployables<TDistanceFn>(

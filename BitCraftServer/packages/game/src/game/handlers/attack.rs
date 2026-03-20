@@ -1,3 +1,4 @@
+use bitcraft_macro::feature_gate;
 use std::time::Duration;
 
 use spacetimedb::log::{self};
@@ -21,6 +22,7 @@ use crate::unwrap_or_err;
 const PLAYER_RADIUS: f32 = 0.5;
 
 #[spacetimedb::reducer]
+#[feature_gate("combat")]
 pub fn attack_start(ctx: &ReducerContext, request: EntityAttackRequest) -> Result<(), String> {
     if !has_role(ctx, &ctx.sender, Role::Admin) {
         if request.attacker_entity_id != game_state::actor_id(&ctx, false)? {
@@ -140,6 +142,7 @@ pub struct AttackTimer {
 }
 
 #[spacetimedb::reducer]
+#[feature_gate("combat")]
 fn attack_scheduled(ctx: &ReducerContext, timer: AttackTimer) -> Result<(), String> {
     attack(
         ctx,
@@ -254,6 +257,7 @@ fn targetable_entities_in_radius(
 }
 
 #[spacetimedb::reducer]
+#[feature_gate("combat")]
 pub fn attack(ctx: &ReducerContext, request: EntityAttackRequest) -> Result<(), String> {
     if !has_role(ctx, &ctx.sender, Role::Admin) {
         if request.attacker_entity_id != game_state::actor_id(&ctx, false)? {
@@ -395,6 +399,7 @@ pub struct AttackImpactTimerMigrated {
 }
 
 #[spacetimedb::reducer]
+#[feature_gate("combat")]
 pub fn attack_impact(ctx: &ReducerContext, _timer: AttackImpactTimer) -> Result<(), String> {
     if ServerIdentity::validate_server_or_admin(&ctx).is_err() {
         return Err("Invalid identity".into());
@@ -404,6 +409,7 @@ pub fn attack_impact(ctx: &ReducerContext, _timer: AttackImpactTimer) -> Result<
 }
 
 #[spacetimedb::reducer]
+#[feature_gate("combat")]
 pub fn attack_impact_migrated(ctx: &ReducerContext, timer: AttackImpactTimerMigrated) -> Result<(), String> {
     if ServerIdentity::validate_server_or_admin(&ctx).is_err() {
         return Err("Invalid identity".into());
@@ -630,6 +636,31 @@ fn attack_impact_reduce(
                     _ => false,
                 };
 
+                let mut exp_contribution_multiplier = 1.0;
+
+                // Contribution (crumb trail prizes) gating
+                if let Some(contribution_lock) = ctx.db.crumb_trail_contribution_lock_state().entity_id().find(defender_entity_id) {
+                    if let Some(mut prospecting) = ctx.db.prospecting_state().entity_id().find(attacker_entity_id) {
+                        if prospecting.crumb_trail_entity_id != contribution_lock.crumb_trail_entity_id {
+                            return Err("You must have helped find this quarry to be able to interact with it".into());
+                        }
+                        let crumb_trail = ctx
+                            .db
+                            .crumb_trail_state()
+                            .entity_id()
+                            .find(prospecting.crumb_trail_entity_id)
+                            .unwrap();
+                        let max_nodes = crumb_trail.crumb_radiuses.len();
+                        let prospecting_desc = ctx.db.prospecting_desc().id().find(prospecting.prospecting_id).unwrap();
+                        let max_contribution_nodes = (prospecting_desc.pct_nodes_for_max_contribution * max_nodes as f32).round() as i32;
+                        exp_contribution_multiplier = (prospecting.completed_steps as f32 / max_contribution_nodes as f32).min(1.0);
+                        if prospecting.completed_steps != prospecting.total_steps - 1 {
+                            prospecting.ongoing_step = prospecting.total_steps - 1;
+                            ctx.db.prospecting_state().entity_id().update(prospecting);
+                        }
+                    }
+                }
+
                 if !ignore_damage {
                     if attacker_type == EntityType::Player && defender_type == EntityType::Enemy {
                         if ContributionState::applies(ctx, defender_entity_id) {
@@ -637,7 +668,7 @@ fn attack_impact_reduce(
                                 ctx,
                                 attacker_entity_id,
                                 defender_entity_id,
-                                (damage as f32).min(defender_health.health).ceil() as i32,
+                                (exp_contribution_multiplier * ((damage as f32).min(defender_health.health))).ceil() as i32,
                             );
                         }
                     }
@@ -648,7 +679,12 @@ fn attack_impact_reduce(
 
                 // Only award experience against the main target
                 if main_attack {
-                    game_state_filters::award_experience_on_damage(ctx, damage as f32, defender_entity_id, Some(attacker_entity_id));
+                    game_state_filters::award_experience_on_damage(
+                        ctx,
+                        exp_contribution_multiplier * damage as f32,
+                        defender_entity_id,
+                        Some(attacker_entity_id),
+                    );
                 }
 
                 if !ignore_damage {
@@ -782,6 +818,31 @@ fn base_checks(
         return Err(String::new());
     }
 
+    if let Some(combat_immunity) = ctx.db.combat_immunity_state().entity_id().find(defender_entity_id) {
+        if let Some(crumb_trail_entity_id) = combat_immunity.crumb_trail_entity_id {
+            let player_prospecting = unwrap_or_err!(
+                ctx.db.prospecting_state().entity_id().find(attacker_entity_id),
+                "You need to participate to the prospecting to attack this enemy"
+            );
+            if player_prospecting.crumb_trail_entity_id != crumb_trail_entity_id {
+                return Err("You did not participate in the right prospecting to hunt this quarry".into());
+            }
+        }
+        if combat_immunity.immunity_end_timestamp > ctx.timestamp {
+            let delta = combat_immunity
+                .immunity_end_timestamp
+                .duration_since(ctx.timestamp)
+                .unwrap()
+                .as_secs();
+
+            return Err(format!(
+                "You have to wait {{0}} {{1}} before attacking this enemy|~{delta}|~{}",
+                if delta > 1 { "seconds" } else { "second" }
+            )
+            .into());
+        }
+    }
+
     let ability_state = match ctx
         .db
         .ability_state()
@@ -836,27 +897,6 @@ fn base_checks(
             AbilityTypeEnum::CombatAction,
             AbilityType::CombatAction(action_desc.id),
         )?;
-
-        // Contribution (crumb trail prizes) gating
-        if let Some(contribution_lock) = ctx.db.crumb_trail_contribution_lock_state().entity_id().find(defender_entity_id) {
-            if let Some(prospecting) = ctx.db.prospecting_state().entity_id().find(attacker_entity_id) {
-                if prospecting.crumb_trail_entity_id != contribution_lock.crumb_trail_entity_id {
-                    return Err("You must have helped find this quarry to be able to interact with it".into());
-                }
-            } else {
-                if ctx
-                    .db
-                    .crumb_trail_contribution_spent_state()
-                    .player_and_crumb_entity_id()
-                    .filter((attacker_entity_id, contribution_lock.crumb_trail_entity_id))
-                    .next()
-                    .is_some()
-                {
-                    return Err("You've already interacted all you can with this quarry".into());
-                }
-                return Err("You must have helped find this quarry to be able to interact with it".into());
-            }
-        }
 
         if ability_state.is_under_cooldown(ctx, !combat_action.ignore_global_cooldown) {
             // Under cooldown, silent error

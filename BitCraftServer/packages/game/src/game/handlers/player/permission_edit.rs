@@ -1,3 +1,4 @@
+use bitcraft_macro::feature_gate;
 use spacetimedb::{ReducerContext, Table};
 
 use crate::{
@@ -11,6 +12,7 @@ use crate::{
 };
 
 #[spacetimedb::reducer]
+#[feature_gate]
 pub fn permission_edit(ctx: &ReducerContext, request: PlayerPermissionEditRequest) -> Result<(), String> {
     let actor_id = game_state::actor_id(&ctx, true)?;
 

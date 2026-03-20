@@ -1,3 +1,4 @@
+use bitcraft_macro::feature_gate;
 use crate::game::reducer_helpers::player_action_helpers;
 use crate::game::terrain_chunk::TerrainChunkCache;
 use crate::game::{coordinates::*, game_state};
@@ -10,6 +11,7 @@ use crate::{
 use spacetimedb::ReducerContext;
 
 #[spacetimedb::reducer]
+#[feature_gate]
 pub fn terraform_set_final_target(ctx: &ReducerContext, request: PlayerTerraformSetFinalTargetRequest) -> Result<(), String> {
     let actor_id = game_state::actor_id(&ctx, true)?;
     PlayerTimestampState::refresh(ctx, actor_id, ctx.timestamp);

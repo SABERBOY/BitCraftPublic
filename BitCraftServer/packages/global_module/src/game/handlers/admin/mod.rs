@@ -2,6 +2,7 @@
 
 pub mod admin_add_player_previous_name;
 pub mod admin_broadcast;
+pub mod admin_clean_sieges;
 pub mod admin_create_direct_chat_message;
 pub mod admin_create_player_report;
 pub mod admin_delete_moderation_action_log_entry;
@@ -22,5 +23,6 @@ pub mod admin_replace_identity;
 pub mod admin_shared;
 pub mod admin_sign_out_all;
 pub mod admin_skip_queue;
+pub mod admin_update_empire_ranks;
 pub mod admin_update_granted_hub_items;
 pub mod admin_update_sign_in_parameters;

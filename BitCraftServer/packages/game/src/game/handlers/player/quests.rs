@@ -1,3 +1,4 @@
+use bitcraft_macro::feature_gate;
 use spacetimedb::{ReducerContext, Table};
 
 use crate::game::discovery::Discovery;
@@ -9,6 +10,7 @@ use crate::messages::static_data::{QuestChainDesc, quest_chain_desc, quest_stage
 use crate::{unwrap_or_err};
 
 #[spacetimedb::reducer]
+#[feature_gate]
 pub fn complete_quest_chain(ctx: &ReducerContext, id: i32) -> Result<(), String> {
     let actor_id = game_state::actor_id(&ctx, true)?;
     PlayerTimestampState::refresh(ctx, actor_id, ctx.timestamp);
@@ -54,6 +56,7 @@ pub fn complete_quest_chain(ctx: &ReducerContext, id: i32) -> Result<(), String>
 }
 
 #[spacetimedb::reducer]
+#[feature_gate]
 pub fn start_quest_chain(ctx: &ReducerContext, id: i32) -> Result<(), String> {
     let actor_id = game_state::actor_id(&ctx, true)?;
     PlayerTimestampState::refresh(ctx, actor_id, ctx.timestamp);
@@ -100,6 +103,7 @@ fn start_quest_chain_internal(ctx: &ReducerContext, actor_id : u64, desc : &Ques
 }
 
 #[spacetimedb::reducer]
+#[feature_gate]
 pub fn advance_quest_stage(ctx: &ReducerContext, chain_id: i32) -> Result<(), String> {
     let actor_id = game_state::actor_id(&ctx, true)?;
     PlayerTimestampState::refresh(ctx, actor_id, ctx.timestamp);
@@ -151,6 +155,7 @@ pub fn advance_quest_stage(ctx: &ReducerContext, chain_id: i32) -> Result<(), St
 }
 
 #[spacetimedb::reducer]
+#[feature_gate]
 pub fn set_quest_tracked(ctx: &ReducerContext, id : i32, tracked : bool) -> Result<(), String> {
     let actor_id = game_state::actor_id(&ctx, true)?;
     PlayerTimestampState::refresh(ctx, actor_id, ctx.timestamp);
@@ -186,6 +191,7 @@ fn untrack_all_quests(ctx: &ReducerContext, player_entity_id : u64) -> Result<()
 }
 
 #[spacetimedb::reducer]
+#[feature_gate]
 pub fn request_stage_reward(ctx: &ReducerContext, reward_id : i32) -> Result<(), String> {
     let actor_id = game_state::actor_id(&ctx, true)?;
     PlayerTimestampState::refresh(ctx, actor_id, ctx.timestamp);
@@ -213,20 +219,22 @@ pub fn request_stage_reward(ctx: &ReducerContext, reward_id : i32) -> Result<(),
     ctx.db.quest_chain_state().entity_id().update(quest_chain_state);
 
     // Award the items
-    let mut discovery = Discovery::new(actor_id);
-    let mut inventory = unwrap_or_err!(InventoryState::get_player_inventory(ctx, actor_id), "Player has no inventory");
-    for mut item_stack in onboarding_reward_desc.rewards {
-        discovery.acquire_item_stack(ctx, &item_stack);
-        item_stack.auto_collect(ctx, &mut discovery, actor_id);
-        inventory.add_multiple_with_overflow(ctx, &vec![item_stack]);
-    }
-    ctx.db.inventory_state().entity_id().update(inventory);
-    discovery.commit(ctx);
+    let player_coord = ctx.db.mobile_entity_state().entity_id().find(&actor_id).unwrap().coordinates();
+    InventoryState::deposit_to_player_inventory_and_nearby_deployables(
+        ctx,
+        actor_id,
+        &onboarding_reward_desc.rewards,
+        |x| x.distance_to(player_coord),
+        false,
+        || vec![player_coord],
+        true,
+    )?;
 
     Ok(())
 }
 
 #[spacetimedb::reducer]
+#[feature_gate]
 pub fn skip_onboarding(ctx: &ReducerContext) -> Result<(), String> {
     let actor_id = game_state::actor_id(&ctx, true)?;
     PlayerTimestampState::refresh(ctx, actor_id, ctx.timestamp);

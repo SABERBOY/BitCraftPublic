@@ -1,4 +1,5 @@
 ﻿use crate::game::game_state::{self, create_entity};
+use bitcraft_macro::feature_gate;
 use crate::messages::components::{chat_message_state, player_report_state, player_report_state_timestamp, player_username_state, ChatMessageState, PlayerReportStateTimestamp};
 use crate::messages::global::{direct_message_state, DirectMessageState};
 use crate::{unwrap_or_err, PlayerReportState};
@@ -7,6 +8,7 @@ use spacetimedb::{ReducerContext, Table};
 const CONTEXT_SIZE: usize = 5;
 
 #[spacetimedb::reducer]
+#[feature_gate]
 pub fn report_targeted_chat_message(ctx: &ReducerContext, chat_message_id: u64, report_type: String, message: String) -> Result<(), String> {
     let actor_id = game_state::actor_id(&ctx, true)?;
 

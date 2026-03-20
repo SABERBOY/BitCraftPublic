@@ -1,3 +1,4 @@
+use bitcraft_macro::feature_gate;
 use crate::game::game_state::game_state_filters;
 use crate::game::reducer_helpers;
 use crate::{
@@ -8,6 +9,7 @@ use crate::{
 use spacetimedb::ReducerContext;
 
 #[spacetimedb::reducer]
+#[feature_gate]
 pub fn deployable_follow(ctx: &ReducerContext, request: PlayerDeployableMoveRequest) -> Result<(), String> {
     let actor_id = game_state::actor_id(&ctx, true)?;
 

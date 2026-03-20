@@ -1,3 +1,4 @@
+use bitcraft_macro::feature_gate;
 use spacetimedb::{ReducerContext, Timestamp};
 
 use crate::{
@@ -9,6 +10,7 @@ use crate::{
 use super::claim_tech_unlock_tech::claim_tech_unlock_timer;
 
 #[spacetimedb::reducer]
+#[feature_gate]
 pub fn claim_tech_cancel(ctx: &ReducerContext, request: PlayerClaimTechCancelRequest) -> Result<(), String> {
     let actor_id = game_state::actor_id(&ctx, true)?;
     PlayerTimestampState::refresh(ctx, actor_id, ctx.timestamp);

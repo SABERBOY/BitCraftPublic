@@ -1,3 +1,4 @@
+use bitcraft_macro::feature_gate;
 use bitcraft_macro::shared_table_reducer;
 use spacetimedb::ReducerContext;
 
@@ -7,17 +8,18 @@ use crate::{
     unwrap_or_err,
 };
 
-use super::player_housing_update::player_housing_update;
+use super::player_housing_update::player_housing_update_impl;
 
 #[spacetimedb::reducer]
 #[shared_table_reducer]
+#[feature_gate]
 pub fn player_housing_enter(ctx: &ReducerContext, request: PlayerHousingEnterRequest) -> Result<(), String> {
     let actor_id = game_state::actor_id(&ctx, true)?;
     HealthState::check_incapacitated(ctx, actor_id, true)?;
 
     // If the owner enters his house, check for upgrades
     if actor_id == request.owner_entity_id {
-        player_housing_update(ctx, request.building_entity_id)?;
+        player_housing_update_impl(ctx, request.building_entity_id)?;
     }
 
     PlayerTimestampState::refresh(ctx, actor_id, ctx.timestamp);

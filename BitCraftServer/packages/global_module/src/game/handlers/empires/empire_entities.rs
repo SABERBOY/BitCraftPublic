@@ -142,9 +142,9 @@ impl EmpireNodeState {
             EmpireChunkState::delete_shared(ctx, chunk, crate::inter_module::InterModuleDestination::AllOtherRegions);
         }
 
-        // Delete sieges happening in this node
+        // End all ongoing sieges for this building
         for siege in ctx.db.empire_node_siege_state().building_entity_id().filter(self.entity_id) {
-            EmpireNodeSiegeState::delete_shared(ctx, siege, crate::inter_module::InterModuleDestination::AllOtherRegions);
+            siege.cancel_siege(ctx);
         }
 
         EmpireNodeState::delete_shared(ctx, self, crate::inter_module::InterModuleDestination::AllOtherRegions);
@@ -258,7 +258,7 @@ impl EmpireState {
 
             send_inter_module_message(
                 ctx,
-                crate::messages::inter_module::MessageContents::OnPlayerLeftEmpire(OnPlayerLeftEmpireMsg {
+                crate::messages::inter_module::MessageContentsV2::OnPlayerLeftEmpire(OnPlayerLeftEmpireMsg {
                     player_entity_id: rank_entity_id,
                     empire_entity_id: self.entity_id,
                 }),
@@ -498,7 +498,7 @@ impl EmpireState {
         let region = game_state::player_region(ctx, player_entity_id).expect("Player region not found");
         send_inter_module_message(
             ctx,
-            crate::messages::inter_module::MessageContents::EmpireRemoveCrown(EmpireRemoveCrownMsg { player_entity_id }),
+            crate::messages::inter_module::MessageContentsV2::EmpireRemoveCrown(EmpireRemoveCrownMsg { player_entity_id }),
             crate::inter_module::InterModuleDestination::Region(region),
         );
     }
@@ -521,7 +521,7 @@ impl EmpireState {
         let region = game_state::player_region(ctx, emperor.entity_id).expect("Player region not found");
         send_inter_module_message(
             ctx,
-            crate::messages::inter_module::MessageContents::EmpireUpdateEmperorCrown(EmpireUpdateEmperorCrownMsg { empire_entity_id }),
+            crate::messages::inter_module::MessageContentsV2::EmpireUpdateEmperorCrown(EmpireUpdateEmperorCrownMsg { empire_entity_id }),
             crate::inter_module::InterModuleDestination::Region(region),
         );
     }
@@ -669,7 +669,7 @@ impl EmpirePlayerDataState {
         let region = unwrap_or_err!(ctx.db.user_region_state().identity().find(user.identity), "Player region not found").region_id;
         send_inter_module_message(
             ctx,
-            crate::messages::inter_module::MessageContents::OnPlayerJoinedEmpire(OnPlayerJoinedEmpireMsg {
+            crate::messages::inter_module::MessageContentsV2::OnPlayerJoinedEmpire(OnPlayerJoinedEmpireMsg {
                 player_entity_id: actor_id,
                 empire_entity_id,
             }),
@@ -748,7 +748,7 @@ impl EmpireNodeSiegeState {
 
             send_inter_module_message(
                 ctx,
-                crate::messages::inter_module::MessageContents::RegionDestroySiegeEngine(RegionDestroySiegeEngineMsg {
+                crate::messages::inter_module::MessageContentsV2::RegionDestroySiegeEngine(RegionDestroySiegeEngineMsg {
                     deployable_entity_id: siege_engine.entity_id,
                 }),
                 crate::inter_module::InterModuleDestination::Region(game_state::region_index_from_entity_id(defense.building_entity_id)),

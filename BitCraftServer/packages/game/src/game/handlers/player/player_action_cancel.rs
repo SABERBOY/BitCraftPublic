@@ -1,8 +1,10 @@
+use bitcraft_macro::feature_gate;
 use spacetimedb::ReducerContext;
 
 use crate::{game::game_state, messages::components::*, unwrap_or_err};
 
 #[spacetimedb::reducer]
+#[feature_gate]
 pub fn player_action_cancel(ctx: &ReducerContext, client_cancel: bool) -> Result<(), String> {
     let actor_id = game_state::actor_id(&ctx, true)?;
     PlayerTimestampState::refresh(ctx, actor_id, ctx.timestamp);

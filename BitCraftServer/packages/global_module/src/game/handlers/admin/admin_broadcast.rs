@@ -26,7 +26,7 @@ pub fn reduce(ctx: &ReducerContext, region: u8, title: String, message: String, 
     } else {
         send_inter_module_message(
             ctx,
-            crate::messages::inter_module::MessageContents::AdminBroadcastMessage(
+            crate::messages::inter_module::MessageContentsV2::AdminBroadcastMessage(
                 crate::messages::inter_module::AdminBroadcastMessageMsg { title, message, sign_out },
             ),
             crate::inter_module::InterModuleDestination::Region(region),

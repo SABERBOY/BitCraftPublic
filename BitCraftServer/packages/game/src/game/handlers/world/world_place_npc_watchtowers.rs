@@ -21,7 +21,7 @@ use crate::{
         authentication::Role,
         components::{building_state, BuildingNicknameState},
         empire_shared::{empire_state, EmpireOwnerType},
-        inter_module::{MessageContents, NpcPlaceWatchtowersMsg, NpcWatchtowerPlacement},
+        inter_module::{MessageContentsV2, NpcPlaceWatchtowersMsg, NpcWatchtowerPlacement},
         static_data::{building_desc, construction_recipe_desc},
         util::OffsetCoordinatesSmallMessage,
         world::{world_entity_placement_results, WorldEntityPlacement, WorldEntityPlacementResults, WorldPlacementType},
@@ -207,7 +207,7 @@ pub fn world_place_npc_watchtowers(
         // Send placement data to global module for empire node + chunk creation
         inter_module::send_inter_module_message(
             ctx,
-            MessageContents::NpcPlaceWatchtowers(NpcPlaceWatchtowersMsg {
+            MessageContentsV2::NpcPlaceWatchtowers(NpcPlaceWatchtowersMsg {
                 watchtowers: placements,
                 energy,
                 upkeep,

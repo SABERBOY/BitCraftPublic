@@ -3127,7 +3127,12 @@ fn import_traveler_task_knowledge_requirement_desc_internal(
     ctx: &ReducerContext,
     records: Vec<TravelerTaskKnowledgeRequirementDesc>,
 ) -> Result<(), String> {
-    for id in ctx.db.traveler_task_knowledge_requirement_desc().iter().map(|item| item.traveler_task_id) {
+    for id in ctx
+        .db
+        .traveler_task_knowledge_requirement_desc()
+        .iter()
+        .map(|item| item.traveler_task_id)
+    {
         ctx.db.traveler_task_knowledge_requirement_desc().traveler_task_id().delete(&id);
     }
 
@@ -3990,6 +3995,38 @@ fn import_quest_stage_desc_internal(ctx: &ReducerContext, records: Vec<QuestStag
 }
 
 #[spacetimedb::reducer]
+pub fn import_equipment_preset_knowledge_desc(ctx: &ReducerContext, records: Vec<EquipmentPresetKnowledgeDesc>) -> Result<(), String> {
+    if !has_role(ctx, &ctx.sender, Role::Admin) {
+        return Err("Invalid permissions".into());
+    }
+    import_equipment_preset_knowledge_desc_internal(ctx, records)?;
+    Ok(())
+}
+fn import_equipment_preset_knowledge_desc_internal(ctx: &ReducerContext, records: Vec<EquipmentPresetKnowledgeDesc>) -> Result<(), String> {
+    for id in ctx
+        .db
+        .equipment_preset_knowledge_desc()
+        .iter()
+        .map(|item: EquipmentPresetKnowledgeDesc| item.knowledge_id)
+    {
+        ctx.db.equipment_preset_knowledge_desc().knowledge_id().delete(&id);
+    }
+    let len: usize = records.len();
+    log::info!("Will insert {} records of type EquipmentPresetKnowledgeDesc", len);
+    for record in records {
+        let id = record.knowledge_id;
+        if let Err(err) = ctx.db.equipment_preset_knowledge_desc().try_insert(record) {
+            return Err(format!(
+                "Couldn't insert EquipmentPresetKnowledgeDesc record with id {:?}. Error message: {}",
+                id, err
+            ));
+        }
+    }
+    log::info!("Inserted {} records of type EquipmentPresetKnowledgeDesc", len);
+    Ok(())
+}
+
+#[spacetimedb::reducer]
 pub fn import_building_buff_desc(ctx: &ReducerContext, records: Vec<BuildingBuffDesc>) -> Result<(), String> {
     if !has_role(ctx, &ctx.sender, Role::Admin) {
         return Err("Invalid permissions".into());
@@ -4127,6 +4164,7 @@ pub fn commit_staged_static_data(ctx: &ReducerContext) -> Result<(), String> {
     import_stage_rewards_desc_internal(ctx, collect_table(ctx.db.staged_stage_rewards_desc()))?;
     import_quest_stage_desc_internal(ctx, collect_table(ctx.db.staged_quest_stage_desc()))?;
     import_building_buff_desc_internal(ctx, collect_table(ctx.db.staged_building_buff_desc()))?;
+    import_equipment_preset_knowledge_desc_internal(ctx, collect_table(ctx.db.staged_equipment_preset_knowledge_desc()))?;
 
     import_static_data_post_processing(ctx)?;
     generate_building_function_mappings(ctx)?;

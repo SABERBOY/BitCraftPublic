@@ -1,3 +1,4 @@
+use bitcraft_macro::feature_gate;
 use std::cmp::Ordering;
 
 use crate::game::game_state;
@@ -8,6 +9,7 @@ use spacetimedb::ReducerContext;
 use super::inventory_helper;
 
 #[spacetimedb::reducer]
+#[feature_gate]
 pub fn inventory_sort(ctx: &ReducerContext, target_entity_id: u64) -> Result<(), String> {
     let actor_id = game_state::actor_id(&ctx, true)?;
     PlayerTimestampState::refresh(ctx, actor_id, ctx.timestamp);

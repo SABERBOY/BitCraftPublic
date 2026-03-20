@@ -431,12 +431,14 @@ pub struct PlayerQuestClearStateRequest {
 #[derive(SpacetimeType)]
 pub struct PlayerEquipmentAddRequest {
     pub from_pocket: Option<PocketKey>,
+    pub preset_index: i32,
 }
 
 #[derive(SpacetimeType)]
 pub struct PlayerEquipmentRemoveRequest {
     pub slot: i32,
     pub to_pocket: Option<PocketKey>,
+    pub preset_index: i32,
 }
 
 #[derive(SpacetimeType)]

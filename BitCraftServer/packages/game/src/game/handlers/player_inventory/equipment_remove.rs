@@ -7,22 +7,43 @@ use crate::messages::action_request::PlayerEquipmentRemoveRequest;
 use crate::messages::components::*;
 use crate::messages::static_data::*;
 use crate::unwrap_or_err;
+use bitcraft_macro::feature_gate;
 use spacetimedb::ReducerContext;
 
 #[spacetimedb::reducer]
+#[feature_gate]
 pub fn equipment_remove(ctx: &ReducerContext, request: PlayerEquipmentRemoveRequest) -> Result<(), String> {
     let actor_id = game_state::actor_id(&ctx, true)?;
     HealthState::check_incapacitated(ctx, actor_id, true)?;
 
     PlayerTimestampState::refresh(ctx, actor_id, ctx.timestamp);
 
-    let mut equipment = ctx.db.equipment_state().entity_id().find(&actor_id).unwrap().clone();
-    let equipment_slots = &mut equipment.equipment_slots;
-
     let remove_slot_index = request.slot as usize;
-
     if remove_slot_index == EquipmentSlotType::MainHand as usize || remove_slot_index == EquipmentSlotType::OffHand as usize {
         return Err("Obsolete - you can no longer equip main hand and offhand tools".into());
+    }
+
+    let preset_index = if request.slot == EquipmentSlotType::HeadArtifact as i32 {
+        0
+    } else {
+        request.preset_index
+    };
+
+    let mut equipment = ctx.db.equipment_state().entity_id().find(&actor_id).unwrap();
+    let mut equipment_preset = None;
+    let mut equipment_slots = &mut equipment.equipment_slots;
+
+    if preset_index != 0 {
+        equipment_preset = ctx
+            .db
+            .equipment_preset_state()
+            .player_and_index()
+            .filter((actor_id, preset_index))
+            .next();
+        if equipment_preset.is_none() {
+            return Err("Invalid equipment preset index".into());
+        }
+        equipment_slots = &mut equipment_preset.as_mut().unwrap().equipment_slots;
     }
 
     let equipment_slot = &equipment_slots[remove_slot_index];
@@ -94,12 +115,12 @@ pub fn equipment_remove(ctx: &ReducerContext, request: PlayerEquipmentRemoveRequ
 
             for slot in equipment_info.slots.iter() {
                 let slot = *slot as usize;
-                let equipment_slot = equipment_slots[slot].clone();
+                let equipment_slot = &equipment_slots[slot];
                 if equipment_slot.item_id() > 0 {
                     return Err("Can't swap".into());
                 }
                 equipment_slots[slot] = EquipmentSlot {
-                    item: Some(contents.clone()),
+                    item: Some(contents),
                     primary: equipment_info.slots[0],
                 };
             }
@@ -120,7 +141,11 @@ pub fn equipment_remove(ctx: &ReducerContext, request: PlayerEquipmentRemoveRequ
         ctx.db.inventory_state().entity_id().update(inventory);
     }
 
-    ctx.db.equipment_state().entity_id().update(equipment);
+    if let Some(preset) = equipment_preset {
+        ctx.db.equipment_preset_state().entity_id().update(preset);
+    } else {
+        ctx.db.equipment_state().entity_id().update(equipment);
+    }
 
     PlayerState::collect_stats(ctx, actor_id);
 

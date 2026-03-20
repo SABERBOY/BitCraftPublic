@@ -1,3 +1,4 @@
+use bitcraft_macro::feature_gate;
 use crate::game::reducer_helpers::player_action_helpers;
 use crate::game::terrain_chunk::TerrainChunkCache;
 use crate::messages::components::PlayerActionState;
@@ -20,6 +21,7 @@ macro_rules! log {
 }
 
 #[spacetimedb::reducer]
+#[feature_gate("prospecting")]
 pub fn prospect_start(ctx: &ReducerContext, prospecting_id: i32, timestamp: u64) -> Result<(), String> {
     let actor_id = game_state::actor_id(&ctx, true)?;
     PlayerTimestampState::refresh(ctx, actor_id, ctx.timestamp);
@@ -40,6 +42,7 @@ pub fn prospect_start(ctx: &ReducerContext, prospecting_id: i32, timestamp: u64)
 }
 
 #[spacetimedb::reducer]
+#[feature_gate("prospecting")]
 pub fn prospect(ctx: &ReducerContext, prospecting_id: i32, timestamp: u64) -> Result<(), String> {
     let actor_id = game_state::actor_id(&ctx, true)?;
     PlayerTimestampState::refresh(ctx, actor_id, ctx.timestamp);
@@ -195,6 +198,7 @@ fn reduce(
                 last_prospection_timestamp: ctx.timestamp,
                 next_crumb_angle: Vec::new(), // this will be updated below
                 contribution: 0,
+                to_next_node: 0.0, // this will be updated below
             });
             log!("* Joining existing CrumbTrail {{0}}|~{}", trail.entity_id);
         } else {
@@ -209,7 +213,15 @@ fn reduce(
                     next_crumb_angle: Vec::new(), // this will be updated below
                     last_prospection_timestamp: ctx.timestamp,
                     contribution: 0,
+                    to_next_node: 0.0, // this will be updated below
                 });
+
+                ctx.db.crumb_trail_exposed_state().insert(CrumbTrailExposedState {
+                    crumb_trail_entity_id: new_trail.entity_id,
+                    exposed_locations: Vec::new(),
+                    exposed_herd_entity_id: 0,
+                });
+
                 ctx.db.crumb_trail_state().insert(new_trail);
             } else {
                 // Did not find anything. Not an error, but nothing gets created either.
@@ -239,10 +251,18 @@ fn reduce(
             .coordinates()
     };
 
-    let is_heading_torwards_reward = step >= crumb_trail.crumb_radiuses.len();
+    // Step 0 is flagged at [Original Location] but checking for CrumbLocation[0]
+    // If we have 4 steps:
+    // Step 0 -> Looking for CrumbLocation[0], didn't reach any crumb
+    // Step 1 -> Looking for CrumbLocation[1], reached Crumb #0
+    // Step 2 -> Looking for CrumbLocation[2], reached Crumb #1
+    // Step 3 -> Looking for CrumbLocation[3], reached Crumb #2
+    // Step 4 -> Looking for PrizeLocation, reached Crumb #3
+    let num_crumbs = crumb_trail.crumb_radiuses.len();
+    let is_heading_torwards_reward = step >= num_crumbs;
 
     log!("* PROSPECTING RESULT");
-    log!("* Step # {{0}} / {{1}}|~{}|~{}", step, crumb_trail.crumb_radiuses.len());
+    log!("* Step # {{0}} / {{1}}|~{}|~{}", step, num_crumbs);
     if is_heading_torwards_reward {
         log!("* Target Location: {{0}}|~{:?}", target_location,);
     } else {
@@ -268,26 +288,49 @@ fn reduce(
         if target_location.distance_to(player_location) < crumb_trail.crumb_radiuses[step] {
             if step as i32 == crumb_trail.active_step {
                 crumb_trail.active_step += 1;
-                if crumb_trail.active_step as usize == crumb_trail.crumb_locations.len() {
+
+                let mut exposed = ctx
+                    .db
+                    .crumb_trail_exposed_state()
+                    .crumb_trail_entity_id()
+                    .find(crumb_trail.entity_id)
+                    .unwrap();
+
+                // Expose the node we just visited
+                exposed
+                    .exposed_locations
+                    .push(crumb_trail.crumb_locations[(crumb_trail.active_step - 1) as usize]);
+
+                if crumb_trail.active_step as usize == num_crumbs {
+                    // Also expose the final resource position, so it shows as auto-refreshing prospecting
+                    exposed.exposed_locations.push(crumb_trail.prize_location);
                     if prospecting_desc.enemy_ai_desc_id != 0 {
                         // Spawn Herd
                         log!("* Spawning Prize Herd");
-                        crumb_trail.spawn_herd_prize(ctx, &prospecting_desc);
+                        exposed.exposed_herd_entity_id = crumb_trail.spawn_herd_prize(ctx, &prospecting_desc);
                     } else {
                         // Spawn final clump
                         log!("* Replacing placeholder prize resource by official version");
                         crumb_trail.replace_prize_resources(ctx, &prospecting_desc);
                     }
                 }
+                ctx.db.crumb_trail_exposed_state().crumb_trail_entity_id().update(exposed);
             }
             player_prospecting.completed_steps += 1;
             player_prospecting.contribution += prospecting_desc.contribution_per_visited_bread_crumb;
-            player_prospecting.ongoing_step = crumb_trail.active_step;
+            player_prospecting.ongoing_step += 1; //crumb_trail.active_step;           // for now, fast-track to the end but don't skip any step
             updated_trail = true;
+
+            // Gain experience from that node
+            let quantity = prospecting_desc.experience_per_node.quantity;
+            if quantity > 0.0 {
+                ExperienceState::add_experience_f32(ctx, actor_id, prospecting_desc.experience_per_node.skill_id, quantity);
+            }
         }
     }
     player_prospecting.last_prospection_timestamp = ctx.timestamp;
     player_prospecting.next_crumb_angle = crumb_trail.angles_to_destination(player_location, player_prospecting.ongoing_step);
+    player_prospecting.to_next_node = crumb_trail.distance_to_destination(location.coordinates_float(), player_prospecting.ongoing_step);
     ctx.db.prospecting_state().entity_id().insert_or_update(player_prospecting);
 
     if updated_trail {

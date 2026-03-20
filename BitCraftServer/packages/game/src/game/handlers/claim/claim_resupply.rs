@@ -1,3 +1,4 @@
+use bitcraft_macro::feature_gate;
 use std::time::Duration;
 
 use spacetimedb::ReducerContext;
@@ -23,6 +24,7 @@ pub fn event_delay(ctx: &ReducerContext) -> Duration {
 }
 
 #[spacetimedb::reducer]
+#[feature_gate]
 pub fn claim_resupply_start(ctx: &ReducerContext, request: ClaimResupplyRequest) -> Result<(), String> {
     let actor_id = game_state::actor_id(&ctx, true)?;
     PlayerTimestampState::refresh(ctx, actor_id, ctx.timestamp);
@@ -41,6 +43,7 @@ pub fn claim_resupply_start(ctx: &ReducerContext, request: ClaimResupplyRequest)
 }
 
 #[spacetimedb::reducer]
+#[feature_gate]
 pub fn claim_resupply(ctx: &ReducerContext, request: ClaimResupplyRequest) -> Result<(), String> {
     let actor_id = game_state::actor_id(&ctx, true)?;
     PlayerTimestampState::refresh(ctx, actor_id, ctx.timestamp);

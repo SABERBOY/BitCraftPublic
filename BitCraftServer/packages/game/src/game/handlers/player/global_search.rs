@@ -1,3 +1,4 @@
+use bitcraft_macro::feature_gate;
 use crate::{
     building_desc, building_function_type_mapping_desc, building_state,
     game::{
@@ -9,6 +10,7 @@ use crate::{
 use spacetimedb::{ReducerContext, Table};
 
 #[spacetimedb::reducer]
+#[feature_gate]
 pub fn search_for_closest_building(ctx: &ReducerContext, building_description_ids: Vec<i32>) -> Result<(), String> {
     let actor_id = game_state::actor_id(&ctx, true)?;
     let actor_coord = get_player_location(ctx, actor_id);
@@ -65,6 +67,7 @@ pub fn search_for_closest_building(ctx: &ReducerContext, building_description_id
 }
 
 #[spacetimedb::reducer]
+#[feature_gate]
 pub fn search_for_closest_building_type(ctx: &ReducerContext, building_type_id: i32) -> Result<(), String> {
     let actor_id = game_state::actor_id(&ctx, true)?;
     let actor_coord = get_player_location(ctx, actor_id);

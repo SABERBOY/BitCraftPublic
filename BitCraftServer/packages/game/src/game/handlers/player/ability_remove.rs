@@ -1,9 +1,11 @@
+use bitcraft_macro::feature_gate;
 use spacetimedb::ReducerContext;
 
 use crate::game::game_state;
 use crate::messages::components::{action_bar_state, AbilityState};
 
 #[spacetimedb::reducer]
+#[feature_gate]
 pub fn ability_remove(ctx: &ReducerContext, action_bar_index: u8, local_ability_index: u8) -> Result<(), String> {
     let actor_id = game_state::actor_id(&ctx, true)?;
     reduce(ctx, actor_id, action_bar_index, local_ability_index)

@@ -1,3 +1,4 @@
+use bitcraft_macro::feature_gate;
 use std::i32;
 
 use spacetimedb::ReducerContext;
@@ -19,6 +20,7 @@ use crate::{
 };
 
 #[spacetimedb::reducer]
+#[feature_gate("trade")]
 pub fn barter_stall_order_accept(ctx: &ReducerContext, request: PlayerBarterStallOrderAccept) -> Result<(), String> {
     let actor_id = game_state::actor_id(&ctx, true)?;
     PlayerTimestampState::refresh(ctx, actor_id, ctx.timestamp);

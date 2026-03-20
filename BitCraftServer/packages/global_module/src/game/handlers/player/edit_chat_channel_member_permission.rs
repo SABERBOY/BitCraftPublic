@@ -1,3 +1,4 @@
+use bitcraft_macro::feature_gate;
 use spacetimedb::{ReducerContext};
 
 use crate::{
@@ -7,6 +8,7 @@ use crate::{
 };
 
 #[spacetimedb::reducer]
+#[feature_gate]
 pub fn edit_chat_channel_member_permission(ctx: &ReducerContext, channel_entity_id: u64, player_entity_id: u64, rank: ChatChannelPermission) -> Result<(), String> {
     // This is to make it easier to not allow players to be part of more than the allowed max number of channels at once
     if rank == ChatChannelPermission::Owner || rank == ChatChannelPermission::Banned || rank == ChatChannelPermission::AccessRequested || rank == ChatChannelPermission::PendingInvitation {

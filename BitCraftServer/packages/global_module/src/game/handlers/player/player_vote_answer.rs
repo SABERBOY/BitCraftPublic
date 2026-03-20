@@ -1,3 +1,4 @@
+use bitcraft_macro::feature_gate;
 use crate::{
     game::{game_state, handlers::player::player_vote_conclude::PlayerVoteConcludeTimer, reducer_helpers::timer_helpers::now_plus_secs},
     messages::{
@@ -13,6 +14,7 @@ use super::player_vote_conclude::player_vote_conclude_timer;
 
 #[spacetimedb::reducer]
 #[shared_table_reducer]
+#[feature_gate]
 pub fn player_vote_answer(ctx: &ReducerContext, request: PlayerVoteAnswerRequest) -> Result<(), String> {
     let actor_id = game_state::actor_id(&ctx, true)?;
     reduce(ctx, request.vote_entity_id, actor_id, request.accept)

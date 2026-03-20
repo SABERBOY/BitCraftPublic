@@ -1,3 +1,4 @@
+use bitcraft_macro::feature_gate;
 use std::time::Duration;
 
 use crate::game::reducer_helpers::player_action_helpers;
@@ -8,6 +9,7 @@ use crate::{game::permission_helper, messages::action_request::PlayerPillarShapi
 use spacetimedb::ReducerContext;
 
 #[spacetimedb::reducer]
+#[feature_gate]
 pub fn pillar_shaping_destroy_start(ctx: &ReducerContext, request: PlayerPillarShapingDestroyRequest) -> Result<(), String> {
     let actor_id = game_state::actor_id(&ctx, true)?;
     PlayerTimestampState::refresh(ctx, actor_id, ctx.timestamp);
@@ -27,6 +29,7 @@ pub fn pillar_shaping_destroy_start(ctx: &ReducerContext, request: PlayerPillarS
 }
 
 #[spacetimedb::reducer]
+#[feature_gate]
 pub fn pillar_shaping_destroy(ctx: &ReducerContext, request: PlayerPillarShapingDestroyRequest) -> Result<(), String> {
     let actor_id = game_state::actor_id(&ctx, true)?;
     PlayerTimestampState::refresh(ctx, actor_id, ctx.timestamp);

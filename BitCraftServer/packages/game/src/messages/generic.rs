@@ -125,6 +125,12 @@ pub struct RegionSignInParameters {
     pub grace_period_seconds: u64,
 }
 
+#[spacetimedb::table(name = gated_features)]
+pub struct GatedFeature {
+    #[primary_key]
+    pub feature: String,
+}
+
 #[derive(spacetimedb::SpacetimeType, Clone, Copy, PartialEq, Debug)]
 #[sats(name = "PremiumServiceType")]
 #[repr(i32)]

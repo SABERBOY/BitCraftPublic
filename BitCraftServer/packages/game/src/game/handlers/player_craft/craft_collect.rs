@@ -1,3 +1,4 @@
+use bitcraft_macro::feature_gate;
 use spacetimedb::ReducerContext;
 
 use crate::{
@@ -17,6 +18,7 @@ use crate::{
 };
 
 #[spacetimedb::reducer]
+#[feature_gate("craft")]
 pub fn craft_collect(ctx: &ReducerContext, request: PlayerCraftCollectRequest) -> Result<(), String> {
     let actor_id = game_state::actor_id(&ctx, true)?;
     PlayerTimestampState::refresh(ctx, actor_id, ctx.timestamp);
@@ -70,6 +72,7 @@ pub fn craft_collect(ctx: &ReducerContext, request: PlayerCraftCollectRequest) -
 }
 
 #[spacetimedb::reducer]
+#[feature_gate("craft")]
 pub fn craft_collect_all(ctx: &ReducerContext, request: PlayerCraftCollectAllRequest) -> Result<(), String> {
     let actor_id = game_state::actor_id(&ctx, true)?;
     PlayerTimestampState::refresh(ctx, actor_id, ctx.timestamp);

@@ -1,3 +1,4 @@
+use bitcraft_macro::feature_gate;
 use spacetimedb::ReducerContext;
 
 use crate::game::discovery::Discovery;
@@ -7,6 +8,7 @@ use crate::messages::components::*;
 use crate::{onboarding_reward_desc, unwrap_or_err};
 
 #[spacetimedb::reducer]
+#[feature_gate]
 pub fn complete_onboarding_state(ctx: &ReducerContext, id: u16) -> Result<(), String> {
     let actor_id = game_state::actor_id(&ctx, true)?;
     PlayerTimestampState::refresh(ctx, actor_id, ctx.timestamp);
@@ -40,6 +42,7 @@ pub fn complete_onboarding_state(ctx: &ReducerContext, id: u16) -> Result<(), St
 }
 
 #[spacetimedb::reducer]
+#[feature_gate]
 pub fn start_onboarding_quest(ctx: &ReducerContext, id: u16) -> Result<(), String> {
     let actor_id = game_state::actor_id(&ctx, true)?;
     PlayerTimestampState::refresh(ctx, actor_id, ctx.timestamp);
@@ -57,6 +60,7 @@ pub fn start_onboarding_quest(ctx: &ReducerContext, id: u16) -> Result<(), Strin
 }
 
 #[spacetimedb::reducer]
+#[feature_gate]
 pub fn complete_onboarding_quest(ctx: &ReducerContext, id: u16) -> Result<(), String> {
     let actor_id = game_state::actor_id(&ctx, true)?;
     PlayerTimestampState::refresh(ctx, actor_id, ctx.timestamp);
@@ -75,6 +79,7 @@ pub fn complete_onboarding_quest(ctx: &ReducerContext, id: u16) -> Result<(), St
 }
 
 #[spacetimedb::reducer]
+#[feature_gate]
 pub fn reset_onboarding(ctx: &ReducerContext) -> Result<(), String> {
     let actor_id = game_state::actor_id(&ctx, true)?;
     PlayerTimestampState::refresh(ctx, actor_id, ctx.timestamp);

@@ -1,3 +1,4 @@
+use bitcraft_macro::feature_gate;
 use spacetimedb::ReducerContext;
 
 use crate::{
@@ -18,6 +19,7 @@ use crate::{
 };
 
 #[spacetimedb::reducer]
+#[feature_gate("empire")]
 pub fn empire_donate_item(ctx: &ReducerContext, request: EmpireDonateItemRequest) -> Result<(), String> {
     let actor_id = game_state::actor_id(&ctx, true)?;
 
@@ -61,7 +63,7 @@ pub fn empire_donate_item(ctx: &ReducerContext, request: EmpireDonateItemRequest
 
     send_inter_module_message(
         ctx,
-        crate::messages::inter_module::MessageContents::EmpireDonateItem(EmpireDonateItemMsg {
+        crate::messages::inter_module::MessageContentsV2::EmpireDonateItem(EmpireDonateItemMsg {
             player_entity_id: actor_id,
             item_id: item_stack.item_id,
             count: item_stack.quantity as u32,

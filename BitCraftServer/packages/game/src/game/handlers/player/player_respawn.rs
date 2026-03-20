@@ -1,3 +1,4 @@
+use bitcraft_macro::feature_gate;
 use crate::game::game_state::{self, game_state_filters};
 use crate::messages::components::{active_buff_state, HealthState, PlayerActionState, StaminaState};
 use crate::{health_state, parameters_desc, unwrap_or_err, SatiationState};
@@ -8,6 +9,7 @@ use super::sleep;
 
 #[spacetimedb::reducer]
 #[shared_table_reducer]
+#[feature_gate]
 fn player_respawn(ctx: &ReducerContext, teleport_home: bool) -> Result<(), String> {
     let actor_id = game_state::actor_id(&ctx, true)?;
 

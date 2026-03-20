@@ -1,3 +1,4 @@
+use bitcraft_macro::feature_gate;
 use spacetimedb::ReducerContext;
 
 use crate::{game::autogen::_delete_entity, messages::authentication::ServerIdentity};
@@ -12,6 +13,7 @@ pub struct PlayerVoteConcludeTimer {
 }
 
 #[spacetimedb::reducer]
+#[feature_gate]
 pub fn player_vote_conclude(ctx: &ReducerContext, timer: PlayerVoteConcludeTimer) -> Result<(), String> {
     ServerIdentity::validate_server_or_admin(&ctx)?;
     reduce(ctx, timer.vote_entity_id)

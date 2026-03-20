@@ -1,3 +1,4 @@
+use bitcraft_macro::feature_gate;
 use spacetimedb::ReducerContext;
 
 use crate::{
@@ -12,6 +13,7 @@ use crate::{
 };
 
 #[spacetimedb::reducer]
+#[feature_gate("empire")]
 pub fn empire_collect_hexite_capsule(ctx: &ReducerContext, request: EmpireCollectHexiteCapsuleRequest) -> Result<(), String> {
     let actor_id = game_state::actor_id(&ctx, true)?;
 
@@ -39,7 +41,7 @@ pub fn empire_collect_hexite_capsule(ctx: &ReducerContext, request: EmpireCollec
 
     send_inter_module_message(
         ctx,
-        crate::messages::inter_module::MessageContents::EmpireCollectHexiteCapsule(EmpireCollectHexiteCapsuleMsg {
+        crate::messages::inter_module::MessageContentsV2::EmpireCollectHexiteCapsule(EmpireCollectHexiteCapsuleMsg {
             building_entity_id: request.building_entity_id,
             player_entity_id: actor_id,
         }),

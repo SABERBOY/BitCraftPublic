@@ -1,3 +1,4 @@
+use bitcraft_macro::feature_gate;
 use crate::game::discovery::Discovery;
 use crate::game::entities::location::LocationState;
 use crate::game::handlers::empires::empires_shared::validate_empire_build_foundry;
@@ -18,6 +19,7 @@ use spacetimedb::{ReducerContext, Table};
 
 #[spacetimedb::reducer]
 #[shared_table_reducer]
+#[feature_gate("build")]
 pub fn project_site_place(ctx: &ReducerContext, request: PlayerProjectSitePlaceRequest) -> Result<(), String> {
     let actor_id = game_state::actor_id(&ctx, true)?;
     PlayerTimestampState::refresh(ctx, actor_id, ctx.timestamp);

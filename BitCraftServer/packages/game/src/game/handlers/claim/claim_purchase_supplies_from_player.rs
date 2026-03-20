@@ -1,3 +1,4 @@
+use bitcraft_macro::feature_gate;
 use spacetimedb::{log, ReducerContext};
 
 use crate::game::reducer_helpers::player_action_helpers;
@@ -9,6 +10,7 @@ use crate::{
 };
 
 #[spacetimedb::reducer]
+#[feature_gate]
 pub fn claim_purchase_supplies_from_player(ctx: &ReducerContext, request: ClaimPurchaseSuppliesFromPlayerRequest) -> Result<(), String> {
     let actor_id = game_state::actor_id(&ctx, true)?;
     PlayerTimestampState::refresh(ctx, actor_id, ctx.timestamp);

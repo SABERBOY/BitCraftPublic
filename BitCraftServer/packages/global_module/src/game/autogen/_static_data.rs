@@ -140,6 +140,9 @@ pub fn clear_staged_static_data(ctx: &ReducerContext) -> Result<(), String> {
     for r in ctx.db.staged_equipment_desc().iter() {
         ctx.db.staged_equipment_desc().delete(r);
     }
+    for r in ctx.db.staged_equipment_preset_knowledge_desc().iter() {
+        ctx.db.staged_equipment_preset_knowledge_desc().delete(r);
+    }
     for r in ctx.db.staged_extraction_recipe_desc().iter() {
         ctx.db.staged_extraction_recipe_desc().delete(r);
     }
@@ -898,6 +901,20 @@ pub fn stage_equipment_desc(ctx: &ReducerContext, records: Vec<EquipmentDesc>) -
     }
     for r in records {
         if let Err(e) = ctx.db.staged_equipment_desc().try_insert(r.clone()) {
+            spacetimedb::log::error!("Failed to stage record {:?}: {}", r, e);
+            return Err(e.to_string());
+        }
+    }
+    Ok(())
+}
+
+#[spacetimedb::reducer]
+pub fn stage_equipment_preset_knowledge_desc(ctx: &ReducerContext, records: Vec<EquipmentPresetKnowledgeDesc>) -> Result<(), String> {
+    if !has_role(ctx, &ctx.sender, Role::Admin) {
+        return Err("Invalid permissions".into());
+    }
+    for r in records {
+        if let Err(e) = ctx.db.staged_equipment_preset_knowledge_desc().try_insert(r.clone()) {
             spacetimedb::log::error!("Failed to stage record {:?}: {}", r, e);
             return Err(e.to_string());
         }
@@ -1776,6 +1793,9 @@ pub fn validate_staged_data(ctx: &ReducerContext) -> Result<(), String> {
     }
     if ctx.db.staged_equipment_desc().count() == 0 {
         return Err("Staged data for EquipmentDesc is empty, aborting.".into());
+    }
+    if ctx.db.staged_equipment_preset_knowledge_desc().count() == 0 {
+        return Err("Staged data for EquipmentPresetKnowledgeDesc is empty, aborting.".into());
     }
     if ctx.db.staged_extraction_recipe_desc().count() == 0 {
         return Err("Staged data for ExtractionRecipeDesc is empty, aborting.".into());

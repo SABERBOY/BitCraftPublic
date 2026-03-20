@@ -1,3 +1,4 @@
+use bitcraft_macro::feature_gate;
 use std::time::Duration;
 
 use bitcraft_macro::shared_table_reducer;
@@ -59,6 +60,7 @@ pub fn event_delay_recipe_id(
 }
 
 #[spacetimedb::reducer]
+#[feature_gate("build")]
 pub fn project_site_advance_project_start(ctx: &ReducerContext, request: PlayerProjectSiteAdvanceProjectRequest) -> Result<(), String> {
     let actor_id = game_state::actor_id(&ctx, true)?;
     PlayerTimestampState::refresh(ctx, actor_id, ctx.timestamp);
@@ -80,6 +82,7 @@ pub fn project_site_advance_project_start(ctx: &ReducerContext, request: PlayerP
 
 #[spacetimedb::reducer]
 #[shared_table_reducer] //For waystones and claims
+#[feature_gate("build")]
 pub fn project_site_advance_project(ctx: &ReducerContext, request: PlayerProjectSiteAdvanceProjectRequest) -> Result<(), String> {
     let actor_id = game_state::actor_id(&ctx, true)?;
     PlayerTimestampState::refresh(ctx, actor_id, ctx.timestamp);
@@ -207,38 +210,12 @@ pub fn reduce(
         StaminaState::add_player_stamina(ctx, actor_id, -stamina_requirement);
     }
 
-    let mut equipment = ctx.db.equipment_state().entity_id().find(&actor_id).unwrap().clone();
-
     // Validate Tool Requirement
     if tool_requirements.len() > 0 {
         if let Err(err_str) = ToolDesc::get_required_tool(ctx, actor_id, &tool_requirements[0]) {
             return Err(err_str.into());
         }
     }
-
-    let player_level = ctx
-        .db
-        .experience_state()
-        .entity_id()
-        .find(&actor_id)
-        .unwrap()
-        .get_level(level_requirements[0].skill_id);
-    let recipe_desired_skill = level_requirements[0].level;
-
-    let crit_outcome = player_action_helpers::roll_crit_outcome(player_level, recipe_desired_skill);
-    let skill_power = match skill {
-        Some(skill) => stats.get_skill_power(skill),
-        None => 0.0,
-    };
-    let tool_power = if tool_requirements.is_empty() {
-        1.0
-    } else {
-        let tool = match ToolDesc::get_required_tool(ctx, actor_id, &tool_requirements[0]) {
-            Ok(tool) => tool,
-            Err(err_str) => return Err(err_str.into()),
-        };
-        tool.power as f32
-    } + skill_power;
 
     let actor_coords: crate::messages::util::FloatHexTileMessage = game_state_filters::coordinates_float(ctx, actor_id);
     if project_site.distance_to(ctx, actor_coords.parent_small_tile()) > 2 {
@@ -301,10 +278,43 @@ pub fn reduce(
         return Err("Add more materials to build".into());
     }
 
-    let damage = (tool_power * crit_outcome).round() as i32;
-    let actions_count = i32::min(max_progress - project_site.progress, damage);
+    let player_level = ctx
+        .db
+        .experience_state()
+        .entity_id()
+        .find(&actor_id)
+        .unwrap()
+        .get_level(level_requirements[0].skill_id);
+    let recipe_desired_skill = level_requirements[0].level;
+
+    let mut crit_multiplier = 1.0;
+    let mut experience_actions_count = 0;
+    let mut actions_count = 0;
+
+    if player_level >= recipe_desired_skill {
+        let skill_power = match skill {
+            Some(skill) => stats.get_skill_power(skill),
+            None => 0.0,
+        };
+        let tool_power = if tool_requirements.is_empty() {
+            1.0
+        } else {
+            let tool = match ToolDesc::get_required_tool(ctx, actor_id, &tool_requirements[0]) {
+                Ok(tool) => tool,
+                Err(err_str) => return Err(err_str.into()),
+            };
+            tool.power as f32
+        } + skill_power;
+
+        crit_multiplier = stats.get_final_crit_multiplier(ctx, skill);
+        let base_damage = tool_power.round() as i32;
+        let damage = (tool_power * crit_multiplier).round() as i32;
+
+        experience_actions_count = i32::min(max_progress - project_site.progress, base_damage);
+        actions_count = i32::min(max_progress - project_site.progress, damage);
+    }
     project_site.progress += actions_count;
-    project_site.last_crit_outcome = crit_outcome.ceil() as i32;
+    project_site.last_crit_outcome = crit_multiplier.ceil() as i32;
     project_site.last_hit_timestamp = ctx.timestamp;
 
     // Learn about the building and the construction recipe the player helped with
@@ -321,27 +331,12 @@ pub fn reduce(
             discovery.commit(ctx);
         }
 
-        // Decrease durability on tool as a proof of concept
-        if !tool_requirements.is_empty() {
-            let tool_id = ToolDesc::get_required_tool(ctx, actor_id, &tool_requirements[0]).unwrap().item_id;
-            if let Some(equipment_index) = equipment.equipment_slots.iter().position(|eq| eq.item_id() == tool_id) {
-                let eq_slot = equipment.equipment_slots.get_mut(equipment_index).unwrap();
-                if let Some(previous_durability) = eq_slot.item.unwrap().durability {
-                    let durability = (previous_durability - 1).max(0);
-                    let pocket = eq_slot.item.as_mut().unwrap();
-                    pocket.durability = Some(durability);
-                }
-
-                ctx.db.equipment_state().entity_id().update(equipment);
-            }
-        }
-
         let experience_per_progress = &experience_per_progress[0];
         ExperienceState::add_experience(
             ctx,
             actor_id,
             experience_per_progress.skill_id,
-            f32::ceil(experience_per_progress.quantity * actions_count as f32) as i32,
+            f32::ceil(experience_per_progress.quantity * experience_actions_count as f32) as i32,
         );
 
         if project_site.progress >= actions_required {

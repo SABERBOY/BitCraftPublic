@@ -1,3 +1,4 @@
+use bitcraft_macro::feature_gate;
 use std::time::Duration;
 
 use spacetimedb::ReducerContext;
@@ -32,6 +33,7 @@ pub fn event_delay(ctx: &ReducerContext, request: &DeployableStoreRequest) -> Du
 }
 
 #[spacetimedb::reducer]
+#[feature_gate]
 pub fn deployable_store_start(ctx: &ReducerContext, request: DeployableStoreRequest) -> Result<(), String> {
     let actor_id = game_state::actor_id(&ctx, true)?;
     HealthState::check_incapacitated(ctx, actor_id, true)?;
@@ -53,6 +55,7 @@ pub fn deployable_store_start(ctx: &ReducerContext, request: DeployableStoreRequ
 }
 
 #[spacetimedb::reducer]
+#[feature_gate]
 pub fn deployable_store(ctx: &ReducerContext, request: DeployableStoreRequest) -> Result<(), String> {
     let actor_id = game_state::actor_id(&ctx, true)?;
     PlayerTimestampState::refresh(ctx, actor_id, ctx.timestamp);
@@ -135,7 +138,7 @@ fn reduce_recover(ctx: &ReducerContext, actor_id: u64, request: &DeployableStore
         //We don't know which region deployable is on, so we just blast messages to all regions and see if one of them succeeds
         send_inter_module_message(
             ctx,
-            crate::messages::inter_module::MessageContents::RecoverDeployable(crate::messages::inter_module::RecoverDeployableMsg {
+            crate::messages::inter_module::MessageContentsV2::RecoverDeployable(crate::messages::inter_module::RecoverDeployableMsg {
                 player_entity_id: actor_id,
                 deployable_entity_id: request.deployable_entity_id,
                 deployable_desc_id: collectible.deployable_desc_id,

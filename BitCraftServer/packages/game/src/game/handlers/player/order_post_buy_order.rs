@@ -1,3 +1,4 @@
+use bitcraft_macro::feature_gate;
 use spacetimedb::{ReducerContext, Table};
 
 use crate::{
@@ -17,6 +18,7 @@ use crate::{
 };
 
 #[spacetimedb::reducer]
+#[feature_gate("trade")]
 pub fn order_post_buy_order(ctx: &ReducerContext, request: PlayerPostOrderRequest) -> Result<(), String> {
     let actor_id = game_state::actor_id(&ctx, true)?;
     HealthState::check_incapacitated(ctx, actor_id, true)?;

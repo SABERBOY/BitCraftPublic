@@ -1,3 +1,4 @@
+use bitcraft_macro::feature_gate;
 use spacetimedb::{ReducerContext, Table};
 
 use crate::game::coordinates::*;
@@ -13,6 +14,7 @@ use crate::{
 use crate::{i18n, parameters_desc, player_state};
 
 #[spacetimedb::reducer]
+#[feature_gate("trade")]
 pub fn trade_initiate_session(ctx: &ReducerContext, request: PlayerTradeInitiateSessionRequest) -> Result<(), String> {
     let actor_id = game_state::actor_id(&ctx, true)?;
     PlayerTimestampState::refresh(ctx, actor_id, ctx.timestamp);

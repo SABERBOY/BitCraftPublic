@@ -1,3 +1,4 @@
+use bitcraft_macro::feature_gate;
 use spacetimedb::ReducerContext;
 
 use crate::{
@@ -10,6 +11,7 @@ use crate::{
 };
 
 #[spacetimedb::reducer]
+#[feature_gate("trade")]
 pub fn closed_listing_collect(ctx: &ReducerContext, request: PlayerClosedListingCollectRequest) -> Result<(), String> {
     let actor_id = game_state::actor_id(&ctx, true)?;
 

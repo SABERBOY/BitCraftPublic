@@ -1,3 +1,4 @@
+use bitcraft_macro::feature_gate;
 use crate::game::discovery::Discovery;
 use crate::game::game_state;
 use crate::game::reducer_helpers::player_action_helpers::post_reducer_update_cargo;
@@ -7,6 +8,7 @@ use crate::unwrap_or_err;
 use spacetimedb::ReducerContext;
 
 #[spacetimedb::reducer]
+#[feature_gate]
 pub fn item_pick_up(ctx: &ReducerContext, request: PlayerDroppedInventoryPickUpRequest) -> Result<(), String> {
     let actor_id = game_state::actor_id(&ctx, true)?;
     HealthState::check_incapacitated(ctx, actor_id, true)?;

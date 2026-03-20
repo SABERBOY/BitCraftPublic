@@ -1,3 +1,4 @@
+use bitcraft_macro::feature_gate;
 use crate::game::reducer_helpers::player_action_helpers;
 use crate::game::terrain_chunk::TerrainChunkCache;
 use crate::game::{coordinates::*, game_state};
@@ -40,6 +41,7 @@ fn event_delay_recipe_id(ctx: &ReducerContext, terrain_cell: Option<TerrainCell>
 }
 
 #[spacetimedb::reducer]
+#[feature_gate]
 pub fn terraform_start(ctx: &ReducerContext, request: PlayerTerraformRequest) -> Result<(), String> {
     let actor_id = game_state::actor_id(&ctx, true)?;
     PlayerTimestampState::refresh(ctx, actor_id, ctx.timestamp);
@@ -86,6 +88,7 @@ fn get_terraform_building_id(ctx: &ReducerContext, coordinates: OffsetCoordinate
 }
 
 #[spacetimedb::reducer]
+#[feature_gate]
 pub fn terraform(ctx: &ReducerContext, request: PlayerTerraformRequest) -> Result<(), String> {
     let actor_id = game_state::actor_id(&ctx, true)?;
     PlayerTimestampState::refresh(ctx, actor_id, ctx.timestamp);

@@ -1,3 +1,4 @@
+use bitcraft_macro::feature_gate;
 use std::time::Duration;
 
 use entities::resource_clump::SmallHexTile;
@@ -18,6 +19,7 @@ pub fn event_delay(_actor_id: u64, _request: &PlayerSleepRequest) -> Duration {
 }
 
 #[spacetimedb::reducer]
+#[feature_gate]
 pub fn sleep(ctx: &ReducerContext, _request: PlayerSleepRequest) -> Result<(), String> {
     let actor_id = game_state::actor_id(&ctx, true)?;
     PlayerTimestampState::refresh(ctx, actor_id, ctx.timestamp);

@@ -1,3 +1,4 @@
+use bitcraft_macro::feature_gate;
 use crate::game::game_state;
 use crate::game::reducer_helpers::player_action_helpers;
 use crate::messages::action_request::PlayerItemStackSplitRequest;
@@ -8,6 +9,7 @@ use spacetimedb::ReducerContext;
 use super::inventory_helper;
 
 #[spacetimedb::reducer]
+#[feature_gate]
 pub fn item_stack_split(ctx: &ReducerContext, request: PlayerItemStackSplitRequest) -> Result<(), String> {
     if request.new_stack_count <= 0 {
         return Err("Cannot split into an empty stack".into());

@@ -26,6 +26,7 @@ pub mod duel_state;
 pub mod enemy_scaling_state;
 pub mod enemy_state;
 pub mod enemy_type;
+pub mod equipment_preset_state;
 pub mod equipment_slot;
 pub mod equipment_state;
 pub mod experience_stack;

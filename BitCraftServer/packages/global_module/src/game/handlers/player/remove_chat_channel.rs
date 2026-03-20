@@ -1,3 +1,4 @@
+use bitcraft_macro::feature_gate;
 use spacetimedb::{ReducerContext};
 
 use crate::{
@@ -8,6 +9,7 @@ use crate::{
 };
 
 #[spacetimedb::reducer]
+#[feature_gate]
 pub fn remove_chat_channel(ctx: &ReducerContext, entity_id: u64) -> Result<(), String> {
     if !has_role(ctx, &ctx.sender, Role::Gm) {
         let actor_id = game_state::actor_id(&ctx, true)?;

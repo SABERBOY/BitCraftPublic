@@ -1,3 +1,4 @@
+use bitcraft_macro::feature_gate;
 use std::time::Duration;
 
 use bitcraft_macro::shared_table_reducer;
@@ -17,6 +18,7 @@ use crate::{
 };
 
 #[spacetimedb::reducer]
+#[feature_gate]
 fn update_moving_cost(ctx: &ReducerContext, player_housing_entity_id: u64, moving_cost: i32) -> Result<(), String> {
     ServerIdentity::validate_server_or_admin(&ctx)?;
     let mut player_housing_cost = ctx
@@ -32,6 +34,7 @@ fn update_moving_cost(ctx: &ReducerContext, player_housing_entity_id: u64, movin
 
 #[shared_table_reducer]
 #[spacetimedb::reducer]
+#[feature_gate]
 pub fn player_housing_change_entrance(ctx: &ReducerContext, building_entity_id: u64, expected_time_cost: i32) -> Result<(), String> {
     return reduce(ctx, building_entity_id, expected_time_cost);
 }

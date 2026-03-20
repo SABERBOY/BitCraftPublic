@@ -1,3 +1,4 @@
+use bitcraft_macro::feature_gate;
 use std::collections::HashMap;
 
 use bitcraft_macro::shared_table_reducer;
@@ -16,7 +17,12 @@ use crate::{
 
 #[shared_table_reducer]
 #[spacetimedb::reducer]
-pub fn player_housing_update(ctx: &ReducerContext, building_entity_id: u64) -> Result<(), String> {
+#[feature_gate]
+fn player_housing_update(ctx: &ReducerContext, building_entity_id: u64) -> Result<(), String> {
+    return player_housing_update_impl(ctx, building_entity_id);
+}
+
+pub fn player_housing_update_impl(ctx: &ReducerContext, building_entity_id: u64) -> Result<(), String> {
     let actor_id = game_state::actor_id(&ctx, true)?;
     HealthState::check_incapacitated(ctx, actor_id, true)?;
     PlayerTimestampState::refresh(ctx, actor_id, ctx.timestamp);

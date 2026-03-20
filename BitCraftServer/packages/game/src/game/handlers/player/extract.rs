@@ -1,3 +1,4 @@
+use bitcraft_macro::feature_gate;
 use std::time::Duration;
 
 use crate::{
@@ -21,7 +22,7 @@ use crate::{
     messages::{
         action_request::PlayerExtractRequest,
         components::*,
-        empire_shared::{empire_chunk_state, empire_player_data_state},
+        empire_shared::{empire_chunk_state, empire_player_data_state, EmpirePlayerDataState},
         game_util::{ItemStack, ItemType},
         static_data::*,
     },
@@ -49,6 +50,7 @@ fn event_delay_recipe_id(ctx: &ReducerContext, request: &PlayerExtractRequest, s
 }
 
 #[spacetimedb::reducer]
+#[feature_gate("extract")]
 pub fn extract_start(ctx: &ReducerContext, request: PlayerExtractRequest) -> Result<(), String> {
     let actor_id = game_state::actor_id(&ctx, true)?;
     PlayerTimestampState::refresh(ctx, actor_id, ctx.timestamp);
@@ -71,6 +73,7 @@ pub fn extract_start(ctx: &ReducerContext, request: PlayerExtractRequest) -> Res
 }
 
 #[spacetimedb::reducer]
+#[feature_gate("extract")]
 pub fn extract(ctx: &ReducerContext, request: PlayerExtractRequest) -> Result<(), String> {
     let actor_id = game_state::actor_id(&ctx, true)?;
     PlayerTimestampState::refresh(ctx, actor_id, ctx.timestamp);
@@ -144,6 +147,9 @@ fn reduce(
                 return Err("You must have helped find this resource to be able to gather from it".into());
             } else {
                 if !dry_run {
+                    // jump to final step
+                    prospecting.ongoing_step = prospecting.total_steps - 1;
+
                     prospecting.contribution -= 1;
                     if ctx
                         .db
@@ -309,15 +315,15 @@ fn reduce(
     }
 
     // Validate empire requirements
-    if let Some(empire_req) = recipe.empire_rank_requirement {
+    if let Some(empire_permission) = recipe.empire_permission_required {
         let chunk_index = coordinates.chunk_coordinates().chunk_index();
         if let Some(empire_chunk) = ctx.db.empire_chunk_state().chunk_index().find(chunk_index) {
             if let Some(player_empire) = ctx.db.empire_player_data_state().entity_id().find(actor_id) {
                 if empire_chunk.empire_entity_id != player_empire.empire_entity_id {
                     return Err("Cannot extract this resource when not fully under your empire control".into());
                 }
-                if player_empire.rank > empire_req as u8 {
-                    return Err("You don't have the necessary rank to extract this".into());
+                if !EmpirePlayerDataState::has_permission(ctx, actor_id, empire_permission) {
+                    return Err("You don't have the permissions to extract this".into());
                 }
             } else {
                 return Err("You need to be part of an empire to extract this".into());
@@ -359,31 +365,36 @@ fn reduce(
 
         // Check Extract Yield (factoring power of tool since it affect amount yielded)
         // Get crit rate
-        let (crit_outcome, damage_outcome) = if recipe.cargo_id != 0 {
-            (1, 1)
+        let (success, is_crit, damage_output, experience_damage_output) = if recipe.cargo_id != 0 {
+            (true, false, 1, 0)
         } else {
-            let crit_outcome = if request.clear_from_claim {
-                // demolish on claim always hit regardless of requirements
-                1.0
-            } else {
-                player_action_helpers::roll_crit_outcome(player_level, deposit_desired_level)
-            };
-            let mut result = (crit_outcome * tool_power).round() as i32;
-            let deposit_health = ctx.db.resource_health_state().entity_id().find(&deposit_entity_id).unwrap();
-            result = i32::min(deposit_health.health, result);
-            let damage_outcome = result;
+            if request.clear_from_claim || player_level >= deposit_desired_level {
+                let crit_multiplier = stats.get_final_crit_multiplier(ctx, recipe.get_skill_type());
+                let base_damage = tool_power.round() as i32;
+                let damage = (tool_power * crit_multiplier).round() as i32;
 
-            (crit_outcome.ceil() as i32, damage_outcome)
+                let deposit_health = ctx.db.resource_health_state().entity_id().find(&deposit_entity_id).unwrap();
+                let experience_damage_output = i32::min(deposit_health.health, base_damage);
+                let damage_output = i32::min(deposit_health.health, damage);
+                (
+                    true,
+                    crit_multiplier > 1.0,
+                    damage_output,
+                    if request.clear_from_claim { 0 } else { experience_damage_output },
+                )
+            } else {
+                (false, false, 0, 0)
+            }
         };
 
         let mut discovery = Discovery::new(actor_id);
         let mut output = Vec::new();
 
-        if crit_outcome >= 1 {
+        if success {
             if !request.clear_from_claim {
                 // demolish on claim doesn't yield output
                 for stack in &recipe.extracted_item_stacks {
-                    if let Some(rolled) = stack.roll(ctx, damage_outcome) {
+                    if let Some(rolled) = stack.roll(ctx, damage_output) {
                         output.push(rolled);
                     }
                 }
@@ -397,15 +408,16 @@ fn reduce(
             };
 
             // assign completion experience proportional to damage done / max health
-            let fractional_progress = damage_outcome as f32;
-
-            if let Some(experience_per_progress) = experience_per_progress {
-                ExperienceState::add_experience(
-                    ctx,
-                    actor_id,
-                    experience_per_progress.skill_id,
-                    f32::ceil(experience_per_progress.quantity * fractional_progress) as i32,
-                );
+            let fractional_progress = experience_damage_output as f32;
+            if fractional_progress > 0.0 {
+                if let Some(experience_per_progress) = experience_per_progress {
+                    ExperienceState::add_experience(
+                        ctx,
+                        actor_id,
+                        experience_per_progress.skill_id,
+                        f32::ceil(experience_per_progress.quantity * fractional_progress) as i32,
+                    );
+                }
             }
 
             if !request.clear_from_claim {
@@ -417,16 +429,17 @@ fn reduce(
 
         let resource = ctx.db.resource_desc().id().find(&deposit.resource_id).unwrap();
 
-        let mut extract_outcome = ctx.db.extract_outcome_state().entity_id().find(&actor_id).unwrap();
+        let mut extract_outcome: ExtractOutcomeStateV2 = ctx.db.extract_outcome_state().entity_id().find(&actor_id).unwrap();
         extract_outcome.target_entity_id = deposit_entity_id;
-        extract_outcome.damage = damage_outcome;
+        extract_outcome.damage = damage_output;
         extract_outcome.last_timestamp = ctx.timestamp;
+        extract_outcome.is_crit = is_crit;
         ctx.db.extract_outcome_state().entity_id().update(extract_outcome);
 
         if !resource.ignore_damage {
             // make sure current health does not exceed maximum health or go below 0.0
             let mut deposit_health = ctx.db.resource_health_state().entity_id().find(&deposit_entity_id).unwrap();
-            deposit_health.health = i32::clamp(deposit_health.health - damage_outcome, 0, resource.max_health);
+            deposit_health.health = i32::clamp(deposit_health.health - damage_output, 0, resource.max_health);
 
             if deposit_health.health <= 0 {
                 // Give end of resource items (unless demolishing on claim)

@@ -1,3 +1,4 @@
+use bitcraft_macro::feature_gate;
 use crate::{
     game::{game_state, handlers::authentication::has_role},
     inter_module::{send_inter_module_message, InterModuleDestination},
@@ -5,13 +6,14 @@ use crate::{
         authentication::Role,
         components::{previous_player_skills_state, user_state, NotificationSeverity, PlayerNotificationEvent},
         global::user_region_state,
-        inter_module::{MessageContents, RestoreSkillsMsg},
+        inter_module::{MessageContentsV2, RestoreSkillsMsg},
     },
     unwrap_or_err,
 };
 use spacetimedb::ReducerContext;
 
 #[spacetimedb::reducer]
+#[feature_gate]
 pub fn player_restore_skills(ctx: &ReducerContext, player_entity_id: u64) -> Result<(), String> {
     let actor_id = game_state::actor_id(&ctx, true)?;
 
@@ -30,7 +32,11 @@ pub fn player_restore_skills(ctx: &ReducerContext, player_entity_id: u64) -> Res
             player_entity_id,
             experience_stacks: previous_skills.experience_stacks,
         };
-        send_inter_module_message(ctx, MessageContents::RestoreSkills(msg), InterModuleDestination::Region(region_id));
+        send_inter_module_message(
+            ctx,
+            MessageContentsV2::RestoreSkills(msg),
+            InterModuleDestination::Region(region_id),
+        );
     } else {
         return Err("Player has no stored experience".into());
     }

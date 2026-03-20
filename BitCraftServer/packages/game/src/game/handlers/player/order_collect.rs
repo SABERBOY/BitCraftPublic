@@ -1,3 +1,4 @@
+use bitcraft_macro::feature_gate;
 use spacetimedb::ReducerContext;
 
 use crate::{
@@ -10,6 +11,7 @@ use crate::{
 };
 
 #[spacetimedb::reducer]
+#[feature_gate("trade")]
 pub fn order_collect(ctx: &ReducerContext, request: PlayerOrderCollectRequest) -> Result<(), String> {
     let actor_id = game_state::actor_id(&ctx, true)?;
     HealthState::check_incapacitated(ctx, actor_id, true)?;
@@ -42,7 +44,7 @@ pub fn order_collect(ctx: &ReducerContext, request: PlayerOrderCollectRequest) -
         actor_id,
         &item_stacks,
         |x| building.distance_to(ctx, &x),
-        false,
+        true,
     )?;
 
     if remaining_items.len() == 0 {

@@ -1,3 +1,4 @@
+use bitcraft_macro::feature_gate;
 use crate::messages::static_data::parameters_desc;
 use crate::{
     game::game_state,
@@ -9,6 +10,7 @@ use spacetimedb::{log, ReducerContext};
 
 #[spacetimedb::reducer]
 #[shared_table_reducer]
+#[feature_gate]
 pub fn claim_take_ownership(ctx: &ReducerContext, request: PlayerClaimTakeOwnershipRequest) -> Result<(), String> {
     let actor_id = game_state::actor_id(&ctx, true)?;
     PlayerTimestampState::refresh(ctx, actor_id, ctx.timestamp);
