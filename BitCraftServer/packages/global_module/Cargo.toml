@@ -13,7 +13,7 @@ probability = "0.20.3"
 spacetimedb = { version = "=1.12.0", features = ["unstable"] }
 spacetimedb-bindings-sys = "=1.12.0"
 spacetimedb-bindings-macro = "=1.12.0"
-bitcraft-macro = { path = "./bitcraft-macro" }
+bitcraft-macro = { path = "../game/bitcraft-macro" }
 strum = "0.24"
 strum_macros = "0.24"
 queues = "1.0"

@@ -1,0 +1,21 @@
+pub mod chunk_coordinates;
+pub mod consts;
+pub mod float_hex_tile;
+pub mod hex_coordinates;
+pub mod hex_direction;
+pub mod large_hex_tile;
+pub mod offset_coordinates;
+pub mod offset_coordinates_float;
+pub mod offset_coordinates_large;
+pub mod offset_coordinates_small;
+pub mod region_coordinates;
+pub mod small_hex_tile;
+
+pub type HexDirection = super::coordinates::hex_direction::HexDirection;
+pub type ChunkCoordinates = crate::messages::util::ChunkCoordinatesMessage;
+pub type FloatHexTile = crate::messages::util::FloatHexTileMessage;
+pub type SmallHexTile = crate::messages::util::SmallHexTileMessage;
+pub type LargeHexTile = crate::messages::util::LargeHexTileMessage;
+pub type OffsetCoordinatesFloat = crate::messages::util::OffsetCoordinatesFloat;
+pub type OffsetCoordinatesSmall = crate::messages::util::OffsetCoordinatesSmallMessage;
+pub type OffsetCoordinatesLarge = crate::messages::util::OffsetCoordinatesLargeMessage;

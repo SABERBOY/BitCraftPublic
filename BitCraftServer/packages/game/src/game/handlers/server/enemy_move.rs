@@ -43,7 +43,7 @@ fn reduce(ctx: &ReducerContext, request: EnemyMoveRequest) {
         destination_x: target_offset_coordinates.x,
         destination_z: target_offset_coordinates.z,
         dimension: target_offset_coordinates.dimension,
-        is_running: false,
+        is_walking: false,
         _pad1: 0,
         _pad2: 0,
         _pad3: 0,
