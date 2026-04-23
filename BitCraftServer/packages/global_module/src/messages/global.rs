@@ -20,6 +20,7 @@ pub struct UserRegionState {
 pub enum PlayerVoteType {
     JoinEmpire,
     SubmitEmpire,
+    SubmitWatchtower,
 }
 
 #[derive(spacetimedb::SpacetimeType, Clone, Copy, PartialEq, Debug)]

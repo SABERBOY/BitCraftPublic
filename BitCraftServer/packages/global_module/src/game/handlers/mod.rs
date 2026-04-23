@@ -4,6 +4,7 @@ pub mod admin;
 pub mod cheats;
 pub mod empires;
 pub mod gm;
+pub mod migration;
 pub mod player;
 pub mod stats;
 pub mod authentication;

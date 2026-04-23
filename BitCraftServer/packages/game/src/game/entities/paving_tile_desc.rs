@@ -8,8 +8,8 @@ impl PavingTileDesc {
         assert!(
             match stat_type {
                 CharacterStatType::MovementMultiplier => true,
-                CharacterStatType::SprintMultiplier => true,
-                CharacterStatType::SprintStaminaDrain => true,
+                //CharacterStatType::SprintMultiplier => true,
+                //CharacterStatType::SprintStaminaDrain => true,
                 _ => false,
             },
             "Stat {{0}} is not supported in pavement|~{:?}",

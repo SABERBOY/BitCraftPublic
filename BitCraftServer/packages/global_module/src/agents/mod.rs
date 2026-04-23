@@ -4,6 +4,7 @@ use crate::messages::generic::config;
 use crate::parameters_desc;
 use spacetimedb::{log, ReducerContext};
 
+pub mod chat_cleanup_agent;
 pub mod empire_decay_agent;
 pub mod empire_siege_agent;
 
@@ -19,6 +20,7 @@ pub fn init(ctx: &ReducerContext) {
     if ctx.db.parameters_desc().version().find(&0).is_some() {
         empire_decay_agent::init(ctx);
         empire_siege_agent::init(ctx);
+        chat_cleanup_agent::init(ctx);
 
         log::info!("Initialized agents with parameter values.");
     } else {
@@ -34,5 +36,6 @@ pub fn update_scheduled_timers_from_static_data(ctx: &ReducerContext) -> Result<
     log::info!("Updating scheduled timers with values from static data");
     empire_decay_agent::update_timer(ctx);
     empire_siege_agent::update_timer(ctx);
+    chat_cleanup_agent::update_timer(ctx);
     Ok(())
 }

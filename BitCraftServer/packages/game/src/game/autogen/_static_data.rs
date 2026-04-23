@@ -239,6 +239,9 @@ pub fn clear_staged_static_data(ctx: &ReducerContext) -> Result<(), String> {
     for r in ctx.db.staged_quest_chain_desc().iter() {
         ctx.db.staged_quest_chain_desc().delete(r);
     }
+    for r in ctx.db.staged_quest_drop_desc().iter() {
+        ctx.db.staged_quest_drop_desc().delete(r);
+    }
     for r in ctx.db.staged_quest_stage_desc().iter() {
         ctx.db.staged_quest_stage_desc().delete(r);
     }
@@ -1371,6 +1374,20 @@ pub fn stage_quest_chain_desc(ctx: &ReducerContext, records: Vec<QuestChainDesc>
 }
 
 #[spacetimedb::reducer]
+pub fn stage_quest_drop_desc(ctx: &ReducerContext, records: Vec<QuestDropDesc>) -> Result<(), String> {
+    if !has_role(ctx, &ctx.sender, Role::Admin) {
+        return Err("Invalid permissions".into());
+    }
+    for r in records {
+        if let Err(e) = ctx.db.staged_quest_drop_desc().try_insert(r.clone()) {
+            spacetimedb::log::error!("Failed to stage record {:?}: {}", r, e);
+            return Err(e.to_string());
+        }
+    }
+    Ok(())
+}
+
+#[spacetimedb::reducer]
 pub fn stage_quest_stage_desc(ctx: &ReducerContext, records: Vec<QuestStageDesc>) -> Result<(), String> {
     if !has_role(ctx, &ctx.sender, Role::Admin) {
         return Err("Invalid permissions".into());
@@ -1892,6 +1909,9 @@ pub fn validate_staged_data(ctx: &ReducerContext) -> Result<(), String> {
     }
     if ctx.db.staged_quest_chain_desc().count() == 0 {
         return Err("Staged data for QuestChainDesc is empty, aborting.".into());
+    }
+    if ctx.db.staged_quest_drop_desc().count() == 0 {
+        return Err("Staged data for QuestDropDesc is empty, aborting.".into());
     }
     if ctx.db.staged_quest_stage_desc().count() == 0 {
         return Err("Staged data for QuestStageDesc is empty, aborting.".into());

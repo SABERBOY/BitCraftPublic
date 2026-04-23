@@ -12,6 +12,7 @@ pub mod deployable_follow;
 pub mod deployable_mount;
 pub mod deployable_move;
 pub mod discover_entities;
+pub mod discover_ids;
 pub mod eat;
 pub mod emote;
 pub mod extract;

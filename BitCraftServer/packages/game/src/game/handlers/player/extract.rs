@@ -1,4 +1,5 @@
 use bitcraft_macro::feature_gate;
+use spacetimedb::rand::Rng;
 use std::time::Duration;
 
 use crate::{
@@ -293,26 +294,6 @@ fn reduce(
         .unwrap()
         .get_level(recipe.level_requirements[0].skill_id);
     let deposit_desired_level = recipe.level_requirements[0].level;
-    let mut inventory = unwrap_or_err!(InventoryState::get_player_inventory(ctx, actor_id), "Player has no inventory");
-    let mut inventory_changed = false;
-    // Consume required items (unless demolishing from claim)
-    // Do verification here for error message logical order, but update inventories later.
-    if recipe.consumed_item_stacks.len() > 0 && !request.clear_from_claim {
-        let removal_result = inventory.remove_input_stacks(ctx, &recipe.consumed_item_stacks);
-        inventory_changed = removal_result.inventory_changed;
-        if !removal_result.success {
-            for stack in recipe.consumed_item_stacks {
-                if !inventory.has(&vec![ItemStack::from(ctx, &stack)]) {
-                    let item_name = match stack.item_type {
-                        ItemType::Item => ctx.db.item_desc().id().find(&stack.item_id).unwrap().name,
-                        ItemType::Cargo => ctx.db.cargo_desc().id().find(&stack.item_id).unwrap().name,
-                    };
-                    return Err(format!("Missing {{0}}|~{}", item_name));
-                }
-            }
-            return Err("Missing requirements.".into());
-        }
-    }
 
     // Validate empire requirements
     if let Some(empire_permission) = recipe.empire_permission_required {
@@ -359,6 +340,28 @@ fn reduce(
             return Err("Failed to update stamina".into());
         }
 
+        if !recipe.consumed_item_stacks.is_empty() && !request.clear_from_claim {
+            let consumed_item_stacks = recipe
+                .consumed_item_stacks
+                .iter()
+                .filter_map(|stack| {
+                    let rnd = ctx.rng().gen_range(0.0..=1.0);
+                    if rnd <= stack.consumption_chance {
+                        Some(ItemStack::from(ctx, stack))
+                    } else {
+                        None
+                    }
+                })
+                .collect();
+
+            InventoryState::withdraw_from_player_inventory_and_nearby_deployables(
+                ctx,
+                actor_id,
+                &consumed_item_stacks,
+                |x| get_distance(ctx, &deposit, coordinates, x),
+            )?;
+        }
+
         if recipe.tool_durability_lost > 0 {
             InventoryState::reduce_tool_durability(ctx, actor_id, recipe.tool_requirements[0].tool_type, recipe.tool_durability_lost);
         }
@@ -397,6 +400,11 @@ fn reduce(
                     if let Some(rolled) = stack.roll(ctx, damage_output) {
                         output.push(rolled);
                     }
+                }
+
+                // Quest drops
+                if let Some(mut drops) = QuestDropDesc::roll_extraction(ctx, actor_id, request.recipe_id, damage_output) {
+                    output.append(&mut drops);
                 }
             }
 
@@ -477,9 +485,6 @@ fn reduce(
             }
         }
 
-        if inventory_changed {
-            ctx.db.inventory_state().entity_id().update(inventory);
-        }
         discovery.commit(ctx);
 
         InventoryState::deposit_to_player_inventory_and_nearby_deployables(

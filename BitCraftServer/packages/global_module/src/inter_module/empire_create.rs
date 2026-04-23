@@ -22,7 +22,8 @@ pub fn process_message_on_destination(ctx: &ReducerContext, request: EmpireCreat
         return Err("Not the owner of this claim".into());
     }
 
-    if ctx.db.empire_state().name().find(&request.empire_name).is_some() {
+    let name_lower = request.empire_name.to_lowercase();
+    if ctx.db.empire_lowercase_name_state().name_lowercase().find(&name_lower).is_some() {
         return Err("An empire with this name already exists".into());
     }
 
@@ -76,6 +77,10 @@ pub fn process_message_on_destination(ctx: &ReducerContext, request: EmpireCreat
         owner_type: EmpireOwnerType::Player,
     };
     EmpireState::insert_shared(ctx, empire, crate::inter_module::InterModuleDestination::AllOtherRegions);
+    ctx.db.empire_lowercase_name_state().insert(EmpireLowercaseNameState {
+        entity_id: empire_entity_id,
+        name_lowercase: name_lower,
+    });
     ctx.db.empire_log_state().try_insert(EmpireLogState {
         entity_id: empire_entity_id,
         last_posted: 0,

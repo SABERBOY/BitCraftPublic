@@ -210,7 +210,7 @@ impl DroppedInventoryState {
         dropped_inventory.insert_ownership_timer(ctx, actor_id, ownership_duration);
 
         for item_stack in item_stacks {
-            let converted_items = ItemListDesc::extract_item_stacks_from_item(ctx, item_stack);
+            let converted_items = ItemListDesc::extract_item_stacks_from_item(ctx, item_stack, Some(actor_id));
             while !inventory.add_multiple(ctx, &converted_items) {
                 // Double inventory capacity
                 inventory.double();

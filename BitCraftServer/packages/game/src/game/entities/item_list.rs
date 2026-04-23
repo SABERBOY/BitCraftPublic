@@ -6,7 +6,7 @@ use crate::{
     item_desc, item_list_desc,
     messages::{
         game_util::{ItemStack, ItemType},
-        static_data::{ItemDesc, ItemListDesc},
+        static_data::{ItemDesc, ItemListDesc, QuestDropDesc},
     },
 };
 
@@ -31,7 +31,7 @@ impl ItemListDesc {
     }
     */
 
-    pub fn extract_item_stacks_from_item(ctx: &ReducerContext, item_stack: ItemStack) -> Vec<ItemStack> {
+    pub fn extract_item_stacks_from_item(ctx: &ReducerContext, item_stack: ItemStack, extracting_player_id: Option<u64>) -> Vec<ItemStack> {
         if item_stack.item_type == ItemType::Cargo {
             return vec![item_stack];
         }
@@ -43,22 +43,22 @@ impl ItemListDesc {
 
         let mut resolved_item_list: Vec<ItemStack> = Vec::new();
         for _ in 0..item_stack.quantity {
-            resolved_item_list.extend(Self::extract_item_stacks(ctx, item_list_id).iter());
+            resolved_item_list.extend(Self::extract_item_stacks(ctx, item_list_id, extracting_player_id).iter());
         }
         resolved_item_list
     }
 
-    pub fn extract_item_stacks(ctx: &ReducerContext, item_list_id: i32) -> Vec<ItemStack> {
-        Self::extract_item_stacks_multiple(ctx, item_list_id, 1)
+    pub fn extract_item_stacks(ctx: &ReducerContext, item_list_id: i32, extracting_player_id: Option<u64>) -> Vec<ItemStack> {
+        Self::extract_item_stacks_multiple(ctx, item_list_id, 1, extracting_player_id)
     }
 
-    pub fn extract_item_stacks_multiple(ctx: &ReducerContext, item_list_id: i32, rolls: i32) -> Vec<ItemStack> {
+    pub fn extract_item_stacks_multiple(ctx: &ReducerContext, item_list_id: i32, rolls: i32, extracting_player_id: Option<u64>) -> Vec<ItemStack> {
         let item_list = ctx.db.item_list_desc().id().find(item_list_id).unwrap();
         let item_stacks: Vec<ItemStack> = Vec::new();
-        item_list.roll(ctx, rolls, item_stacks)
+        item_list.roll(ctx, rolls, item_stacks, extracting_player_id)
     }
 
-    pub fn roll(&self, ctx: &ReducerContext, num_rolls: i32, mut item_stacks: Vec<ItemStack>) -> Vec<ItemStack> {
+    pub fn roll(&self, ctx: &ReducerContext, num_rolls: i32, mut item_stacks: Vec<ItemStack>, rolling_player_id: Option<u64>) -> Vec<ItemStack> {
         let mut item_desc_cache: HashMap<i32, ItemDesc> = HashMap::new();
 
         let mut sum = 0.0;
@@ -88,12 +88,22 @@ impl ItemListDesc {
                         }
 
                         // ItemList containing itemlists might not be efficient for high amount of rolls
-                        item_stacks.extend(Self::extract_item_stacks(ctx, item_desc.item_list_id));
+                        item_stacks.extend(Self::extract_item_stacks(ctx, item_desc.item_list_id, rolling_player_id));
                     }
                     break;
                 }
             }
         }
+
+        // Quest Drops
+        if let Some(player_id) = rolling_player_id {
+            if player_id != 0 {
+                if let Some(mut drops) = QuestDropDesc::roll_item_list(ctx, player_id, self.id, num_rolls) {
+                    item_stacks.append(&mut drops);
+                }
+            }
+        }
+
         item_stacks
     }
 }

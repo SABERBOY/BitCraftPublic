@@ -1,4 +1,3 @@
-use bitcraft_macro::feature_gate;
 use crate::game::game_state::game_state_filters;
 use crate::game::handlers::authentication::has_role_no_dev;
 use crate::game::terrain_chunk::TerrainChunkCache;
@@ -8,11 +7,12 @@ use crate::{
     messages::{action_request::PlayerMoveRequest, components::*, static_data::*},
     unwrap_or_err,
 };
+use bitcraft_macro::feature_gate;
 use spacetimedb::ReducerContext;
 
 #[spacetimedb::reducer]
 #[feature_gate]
-pub fn player_move(ctx: &ReducerContext, mut request: PlayerMoveRequest) -> Result<(), String> {
+pub fn player_move(ctx: &ReducerContext, request: PlayerMoveRequest) -> Result<(), String> {
     let actor_id = game_state::actor_id(&ctx, true)?;
     HealthState::check_incapacitated(ctx, actor_id, false)?;
 
@@ -22,13 +22,8 @@ pub fn player_move(ctx: &ReducerContext, mut request: PlayerMoveRequest) -> Resu
         return Err("Can't walk while in a deployable.".into());
     }
 
-    if request.running && InventoryState::get_player_cargo_id(ctx, actor_id) > 0 {
-        // even if the client says running, we override it if they are carrying cargo
-        request.running = false;
-    }
-
     let player_stats = ctx.db.character_stats_state().entity_id().find(&actor_id).unwrap();
-    let mut prev_mobile_entity = ctx.db.mobile_entity_state().entity_id().find(&actor_id).unwrap();
+    let prev_mobile_entity = ctx.db.mobile_entity_state().entity_id().find(&actor_id).unwrap();
 
     let prev_origin = prev_mobile_entity.coordinates_float();
     let target_coordinates: FloatHexTile = unwrap_or_err!(request.destination, "Expected destination in move request").into();
@@ -78,34 +73,6 @@ pub fn player_move(ctx: &ReducerContext, mut request: PlayerMoveRequest) -> Resu
         }
     }
 
-    let stamina_used = if prev_mobile_entity.is_walking {
-        let distance_traveled = prev_origin.distance_to(source_coordinates.clone());
-        let mut run_stamina_use = player_stats.get(CharacterStatType::SprintStaminaDrain);
-        if let Some(paving) = &paving {
-            run_stamina_use = paving.apply_stat_to_value(ctx, run_stamina_use, CharacterStatType::SprintStaminaDrain);
-        }
-        let stamina_state = ctx.db.stamina_state().entity_id().find(&actor_id).unwrap();
-        let s = distance_traveled * run_stamina_use;
-        let s = if stamina_state.stamina + s >= 0.0 {
-            s
-        } else {
-            -stamina_state.stamina
-        };
-        if (s < 0.0) & (stamina_state.stamina < 0.2) {
-            //This is a rough approximation to avoid rubber-banding players from small errors
-            // cancel the run, don't drain the stamina
-            prev_mobile_entity.is_walking = false;
-            request.running = false;
-            // used to be:
-            // return move_validation_helpers::fail_validation(ctx, "Not enough stamina to sprint".into(), actor_id, prev_origin, None);
-            0.0
-        } else {
-            s
-        }
-    } else {
-        0.0
-    };
-
     if !has_role_no_dev(ctx, &ctx.sender, Role::Gm) {
         move_validation_helpers::validate_move_timestamp(prev_mobile_entity.timestamp, request.timestamp, ctx.timestamp)?;
         move_validation_helpers::validate_move_basic(ctx, &prev_origin, &source_coordinates, &target_coordinates, request.duration)?;
@@ -127,8 +94,8 @@ pub fn player_move(ctx: &ReducerContext, mut request: PlayerMoveRequest) -> Resu
         actor_id,
         &source_coordinates,
         &target_coordinates,
-        stamina_used,
-        request.running,
+        0.0,
+        request.is_rp_walk,
         Some(request.timestamp),
     )?;
 
@@ -165,21 +132,13 @@ fn validate_move(
 
     // if source_coordinates.x != target_coordinates.x || source_coordinates.z != target_coordinates.z {
     if source_coordinates.x != prev_origin.x || source_coordinates.z != prev_origin.z {
-        let base_speed = speed * player_stats.get(CharacterStatType::MovementMultiplier);
-        let mut prev_speed = if prev_mobile_entity.is_walking {
-            base_speed * player_stats.get(CharacterStatType::SprintMultiplier)
-        } else {
-            base_speed
-        };
+        let mut prev_speed = speed * player_stats.get(CharacterStatType::MovementMultiplier);
         if request.move_type > 2 {
             prev_speed *= 2.0; //Transitions are above the law
         }
 
         if let Some(paving) = paving {
             prev_speed = paving.apply_stat_to_value_unclamped(prev_speed, crate::CharacterStatType::MovementMultiplier);
-            if prev_mobile_entity.is_walking {
-                prev_speed = paving.apply_stat_to_value_unclamped(prev_speed, crate::CharacterStatType::SprintMultiplier);
-            }
         }
 
         //let (cur_position, cur_distance) = prev_mobile_entity.cur_coord_and_distance_traveled(prev_speed);

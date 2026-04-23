@@ -116,7 +116,7 @@ impl ContributionState {
             }
             let item_list_id = contribution_prizes[i].1;
             let empty_vec = Vec::new();
-            let mut rewards = item_lists[&item_list_id].roll(ctx, if single_roll { 1 } else { contribution }, empty_vec);
+            let mut rewards = item_lists[&item_list_id].roll(ctx, if single_roll { 1 } else { contribution }, empty_vec, Some(contribution_state.player_entity_id));
             let mut auto_collected_by_player: HashSet<i32> = HashSet::new();
 
             // Collect auto-collect outputs

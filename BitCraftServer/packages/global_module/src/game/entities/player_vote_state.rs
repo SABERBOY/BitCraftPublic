@@ -94,6 +94,7 @@ impl PlayerVoteState {
         match self.vote_type {
             PlayerVoteType::JoinEmpire => self.join_empire(ctx),
             PlayerVoteType::SubmitEmpire => self.join_empire(ctx),
+            PlayerVoteType::SubmitWatchtower => self.submit_watchtower(ctx),
         }
     }
 
@@ -118,6 +119,29 @@ impl PlayerVoteState {
         } else {
             self.outcome_str = "Owner declined the invitation.".to_string();
             log::info!("Join empire error - {}", self.outcome_str);
+        }
+    }
+
+    fn submit_watchtower(&mut self, ctx: &ReducerContext) {
+        if self.outcome == PlayerVoteAnswer::Yes {
+            let acceptor_entity_id = self
+                .participants_entity_id
+                .iter()
+                .find(|p| **p != self.initiator_entity_id)
+                .unwrap();
+
+            self.outcome_str = "Something went wrong".to_string();
+            if let Some(acceptor_emperor) = ctx.db.empire_player_data_state().entity_id().find(acceptor_entity_id) {
+                let new_empire_entity_id = acceptor_emperor.empire_entity_id;
+                let watchtower_entity_id = self.argument1;
+                if let Some(mut empire_node) = ctx.db.empire_node_state().entity_id().find(watchtower_entity_id) {
+                    empire_node.convert(ctx, empire_node.energy, new_empire_entity_id);
+                    EmpireNodeState::update_shared(ctx, empire_node, crate::inter_module::InterModuleDestination::AllOtherRegions);
+                    self.outcome_str = "The offer has been accepted".to_string();
+                }
+            }
+        } else {
+            self.outcome_str = "The offer has been declined".to_string();
         }
     }
 }

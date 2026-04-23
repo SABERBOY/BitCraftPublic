@@ -243,10 +243,11 @@ impl ActiveBuffState {
         for buff in &self.active_buffs {
             if self.has_active_buff(buff.buff_id, ctx.timestamp) {
                 if let Some(buff_description) = ctx.db.buff_desc().id().find(&buff.buff_id) {
-                    for i in 0..buff_description.stats.len() {
-                        let value = buff.values[i];
-                        let entry = bonuses.entry(buff_description.stats[i].id).or_insert((0.0, 0.0));
-                        if buff_description.stats[i].is_pct {
+                    for (i, stat) in buff_description.stats.iter().enumerate() {
+                        // Older persisted buffs can have fewer values than the current buff stat list, fall back to static-data defaults instead of panicking on out-of-bounds access.
+                        let value = buff.values.get(i).copied().unwrap_or(stat.value);
+                        let entry = bonuses.entry(stat.id).or_insert((0.0, 0.0));
+                        if stat.is_pct {
                             *entry = (entry.0, entry.1 + value);
                         } else {
                             *entry = (entry.0 + value, entry.1);

@@ -20,6 +20,7 @@ pub mod admin_fix_small_ferralith_cave;
 pub mod admin_grant_all_claims_supplies;
 pub mod admin_grant_collectibles;
 pub mod admin_manage_developers;
+pub mod admin_manage_gated_features;
 pub mod admin_migrate_action_state;
 pub mod admin_migrate_trade_orders;
 pub mod admin_npc_helpers;

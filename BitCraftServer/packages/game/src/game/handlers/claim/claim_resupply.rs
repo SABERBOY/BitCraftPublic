@@ -7,6 +7,7 @@ use crate::game::claim_helper;
 use crate::game::handlers::inventory::inventory_helper;
 use crate::game::reducer_helpers::player_action_helpers;
 use crate::messages::action_request::ClaimResupplyRequest;
+use crate::messages::game_util::ItemType;
 use crate::{building_repairs_desc, parameters_desc};
 use crate::{
     game::{
@@ -138,6 +139,9 @@ pub fn reduce(ctx: &ReducerContext, actor_id: u64, _timestamp: u64, request: &Cl
         inventory.get_at(request.from_pocket.pocket_index as usize),
         "Inventory pocket is empty"
     );
+    if stack.item_type != ItemType::Cargo {
+        return Err("Claims can only be charged with supplies.".into());
+    }
     let repair_value = match ctx.db.building_repairs_desc().cargo_id().find(&stack.item_id) {
         Some(rep) => rep.repair_value,
         None => return Err("Claims can only be charged with supplies.".into()),

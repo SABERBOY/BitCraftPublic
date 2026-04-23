@@ -264,7 +264,7 @@ pub struct MobileEntityState {
     pub destination_x: i32,
     pub destination_z: i32,
     pub dimension: u32,
-    pub is_walking: bool, //Actually is_running
+    pub is_walking: bool,
     // Manual padding to make the struct exactly 48 bytes long.
     // SpacetimeDB can optimize row (de)serialization when:
     // 1. Table types are naturally aligned
@@ -394,7 +394,7 @@ pub struct KnowledgeAchievementState {
 #[spacetimedb::table(name = knowledge_battle_action_state, public)]
 #[derive(Clone, bitcraft_macro::Operations, Debug)]
 #[operations(delete, knowledge)]
-pub struct KnowledgeBattleActionState {
+pub struct KnowledgeBattleActionState {         // [FINAL RELEASE] I'm 99.9% sure this is obsolete
     #[primary_key]
     pub entity_id: u64,
 
@@ -1883,7 +1883,7 @@ pub struct ModerationActionLogEntry {
 #[spacetimedb::table(name = public_progressive_action_state, public, index(name = building_entity_id, btree(columns = [building_entity_id])))]
 #[derive(bitcraft_macro::Operations, Clone, Debug)]
 #[operations(delete)]
-pub struct PublicProgressiveActionState {
+pub struct PublicProgressiveActionState {   // [FINAL RELEASE] this should just be a "is_public" field in ProgressiveActionState
     #[primary_key]
     pub entity_id: u64,
     pub building_entity_id: u64,
@@ -2002,6 +2002,7 @@ pub enum AbilityType {
     AddToToolbelt(i32),         // Item Id
     DeployableToggle(i32),      // Collectible ID - will call either Store or Deploy based on the collectible state
     Emote(i32),                 // Collectible ID
+    EquipPreset(i32),           // Preset index
 }
 
 // Keep in sync with AbilityType
@@ -2020,6 +2021,7 @@ pub enum AbilityTypeEnum {
     AddToToolbelt,
     DeployableToggle,
     Emote,
+    EquipPreset,
 }
 
 #[spacetimedb::table(name = action_bar_state, public,

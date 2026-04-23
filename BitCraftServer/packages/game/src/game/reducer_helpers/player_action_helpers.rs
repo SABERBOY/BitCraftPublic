@@ -187,7 +187,7 @@ pub fn post_reducer_update_cargo(ctx: &ReducerContext, player_entity_id: u64) {
             if buff::activate(ctx, player_entity_id, cargo_debuff_id, None, values).is_err() {
                 log::error!("Unable to activate cargo buff for entity {}", player_entity_id);
             }
-            buff::deactivate_sprint(ctx, player_entity_id);
+            //buff::deactivate_sprint(ctx, player_entity_id);
         }
     }
 }
