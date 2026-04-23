@@ -543,6 +543,8 @@ fn create_player(ctx: &ReducerContext, entity_id: u64) -> Result<u64, String> {
         PlayerState::on_added_to_toolbelt(ctx, entity_id, weapon_equipment_id);
     }
 
+    //Sprint
+    player::ability_set::reduce(ctx, entity_id, 0, 10, AbilityType::Custom(594765058))?;
     // Eat Mushroom Skewer Action to ease-in tutorial goods
     player::ability_set::reduce(ctx, entity_id, 0, 11, AbilityType::Eat(1170001))?;
 

@@ -4053,6 +4053,33 @@ fn import_building_buff_desc_internal(ctx: &ReducerContext, records: Vec<Buildin
     Ok(())
 }
 
+#[spacetimedb::reducer]
+pub fn import_quest_drop_desc(ctx: &ReducerContext, records: Vec<QuestDropDesc>) -> Result<(), String> {
+    if !has_role(ctx, &ctx.sender, Role::Admin) {
+        return Err("Invalid permissions".into());
+    }
+    import_quest_drop_desc_internal(ctx, records)?;
+    Ok(())
+}
+fn import_quest_drop_desc_internal(ctx: &ReducerContext, records: Vec<QuestDropDesc>) -> Result<(), String> {
+    for id in ctx.db.quest_drop_desc().iter().map(|item: QuestDropDesc| item.id) {
+        ctx.db.quest_drop_desc().id().delete(&id);
+    }
+    let len: usize = records.len();
+    log::info!("Will insert {} records of type QuestDropDesc", len);
+    for record in records {
+        let id = record.id;
+        if let Err(err) = ctx.db.quest_drop_desc().try_insert(record) {
+            return Err(format!(
+                "Couldn't insert QuestDropDesc record with id {:?}. Error message: {}",
+                id, err
+            ));
+        }
+    }
+    log::info!("Inserted {} records of type QuestDropDesc", len);
+    Ok(())
+}
+
 fn collect_table<T: spacetimedb::Table>(table: &T) -> Vec<T::Row> {
     return table.iter().collect();
 }
@@ -4165,6 +4192,7 @@ pub fn commit_staged_static_data(ctx: &ReducerContext) -> Result<(), String> {
     import_quest_stage_desc_internal(ctx, collect_table(ctx.db.staged_quest_stage_desc()))?;
     import_building_buff_desc_internal(ctx, collect_table(ctx.db.staged_building_buff_desc()))?;
     import_equipment_preset_knowledge_desc_internal(ctx, collect_table(ctx.db.staged_equipment_preset_knowledge_desc()))?;
+    import_quest_drop_desc_internal(ctx, collect_table(ctx.db.staged_quest_drop_desc()))?;
 
     import_static_data_post_processing(ctx)?;
     generate_building_function_mappings(ctx)?;

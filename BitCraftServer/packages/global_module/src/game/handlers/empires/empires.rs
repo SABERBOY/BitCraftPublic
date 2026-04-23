@@ -1,4 +1,3 @@
-use bitcraft_macro::feature_gate;
 use crate::game::game_state;
 use crate::game::handlers::authentication::has_role;
 use crate::game::reducer_helpers::timer_helpers::now_plus_secs;
@@ -10,6 +9,7 @@ use crate::messages::global::{player_shard_state, user_region_state, PlayerVoteS
 use crate::messages::inter_module::{MessageContentsV2, OnEmpireBuildingDeletedMsg, OnPlayerLeftEmpireMsg};
 use crate::messages::static_data::*;
 use crate::{empire_territory_desc, parameters_desc, unwrap_or_err};
+use bitcraft_macro::feature_gate;
 use bitcraft_macro::shared_table_reducer;
 use spacetimedb::{ReducerContext, Table};
 
@@ -52,7 +52,8 @@ pub fn empire_form(ctx: &ReducerContext, request: EmpireFormRequest) -> Result<(
         return Err("Already the capital of an empire".into());
     }
 
-    if ctx.db.empire_state().name().find(&request.empire_name).is_some() {
+    let name_lower = request.empire_name.to_lowercase();
+    if ctx.db.empire_lowercase_name_state().name_lowercase().find(&name_lower).is_some() {
         return Err("An empire with this name already exists".into());
     }
 
@@ -101,6 +102,10 @@ pub fn empire_form(ctx: &ReducerContext, request: EmpireFormRequest) -> Result<(
         owner_type: EmpireOwnerType::Player,
     };
     EmpireState::insert_shared(ctx, empire, crate::inter_module::InterModuleDestination::AllOtherRegions);
+    ctx.db.empire_lowercase_name_state().insert(EmpireLowercaseNameState {
+        entity_id: empire_entity_id,
+        name_lowercase: name_lower,
+    });
     ctx.db.empire_log_state().try_insert(EmpireLogState {
         entity_id: empire_entity_id,
         last_posted: 0,
@@ -253,6 +258,10 @@ pub fn empire_submit(ctx: &ReducerContext, new_empire_entity_id: u64) -> Result<
             .next(),
         "That empire no longer exist"
     );
+
+    if ctx.db.signed_in_player_state().entity_id().find(target_emperor.entity_id).is_none() {
+        return Err("Target emperor is not online".into());
+    }
 
     // Leave [30] seconds to answer the vote.
     // Todo: put that as a parameter somewhere.
@@ -1096,6 +1105,85 @@ pub fn empire_move_capital(ctx: &ReducerContext, target_claim_entity_id: u64) ->
 
     // Recalculate upkeep based on the capital's new location
     EmpireState::update_empire_upkeep(ctx, empire_settlement_state.empire_entity_id);
+
+    Ok(())
+}
+
+#[spacetimedb::reducer]
+#[shared_table_reducer]
+#[feature_gate("empire")]
+pub fn empire_transfer_watchtower_ownership(
+    ctx: &ReducerContext,
+    watchtower_entity_id: u64,
+    target_empire_entity_id: u64,
+) -> Result<(), String> {
+    let actor_id = game_state::actor_id(&ctx, true)?;
+    let empire_player_data_state = unwrap_or_err!(
+        ctx.db.empire_player_data_state().entity_id().find(&actor_id),
+        "You are not part of an empire"
+    );
+
+    if empire_player_data_state.rank != 0 {
+        return Err("Only the emperor can transfer watchtower ownership".into());
+    }
+
+    let mut empire_node = unwrap_or_err!(
+        ctx.db.empire_node_state().entity_id().find(watchtower_entity_id),
+        "Watchtower does not exist"
+    );
+
+    if empire_node.empire_entity_id == target_empire_entity_id {
+        return Err("You're empire is already the owner of this watchtower".into());
+    }
+
+    if empire_node.empire_entity_id != empire_player_data_state.empire_entity_id {
+        return Err("You can't transfer ownership of a watchtower you don't own".into());
+    }
+
+    if ctx
+        .db
+        .empire_node_siege_state()
+        .building_entity_id()
+        .filter(watchtower_entity_id)
+        .any(|siege| siege.active)
+    {
+        return Err("You cannot transfer ownership of a watchtower under siege".into());
+    }
+
+    if npc_empire::is_npc_empire(ctx, target_empire_entity_id) {
+        // Neutral empire automatically accept
+        empire_node.convert(ctx, empire_node.energy, target_empire_entity_id);
+        EmpireNodeState::update_shared(ctx, empire_node, crate::inter_module::InterModuleDestination::AllOtherRegions);
+        return Ok(());
+    }
+
+    let target_emperor = unwrap_or_err!(
+        ctx.db
+            .empire_player_data_state()
+            .empire_entity_id()
+            .filter(target_empire_entity_id)
+            .filter(|data| data.rank == 0)
+            .next(),
+        "That empire no longer exist"
+    );
+
+    if ctx.db.signed_in_player_state().entity_id().find(target_emperor.entity_id).is_none() {
+        return Err("Target emperor is not online".into());
+    }
+
+    // Leave [30] seconds to answer the vote.
+    // Todo: put that as a parameter somewhere.
+    PlayerVoteState::insert_with_end_timer(
+        ctx,
+        PlayerVoteType::SubmitWatchtower,
+        actor_id,
+        vec![actor_id, target_emperor.entity_id],
+        true,
+        1.0,
+        30.0,
+        watchtower_entity_id,
+        0,
+    );
 
     Ok(())
 }

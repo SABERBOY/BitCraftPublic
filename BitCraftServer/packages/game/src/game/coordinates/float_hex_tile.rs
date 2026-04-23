@@ -76,6 +76,9 @@ impl FloatHexTile {
     }
 
     pub fn distance_to(&self, other: FloatHexTile) -> f32 {
+        if other.dimension != self.dimension {
+            return f32::MAX;
+        }
         return (((other.x - self.x).abs() + (other.y() - self.y()).abs() + (other.z - self.z).abs()) / 2) as f32
             / FLOAT_COORD_PRECISION_MUL as f32;
     }
@@ -135,7 +138,6 @@ impl FloatHexTile {
         return Self::from_position(lv, a.dimension);
     }
 }
-
 
 impl Add for FloatHexTile {
     type Output = FloatHexTile;

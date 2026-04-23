@@ -21,10 +21,6 @@ pub fn process_message_on_destination(ctx: &ReducerContext, request: EmpireWithd
         "You are not part of an empire"
     );
 
-    if !EmpirePlayerDataState::has_permission(ctx, request.player_entity_id, EmpirePermission::WithdrawEmpireCurrency) {
-        return Err("You must have withdraw permissions".into());
-    }
-
     if request.is_cargo {
         // for now no cargo can be withdrawd
         return Err("This cargo can't be withdrawn".into());

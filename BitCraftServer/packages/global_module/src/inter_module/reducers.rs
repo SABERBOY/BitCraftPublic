@@ -118,7 +118,11 @@ pub fn on_inter_module_message_processed(ctx: &ReducerContext, id: u64, error: O
 
     let message = match ctx.db.inter_module_message_v2().id().find(id) {
         Some(m) => m,
-        None => return Err(format!("No inter_module_message for id {{0}}|~{}", { id })),
+        None => {
+            return Err(format!(
+                "No inter_module_message for id {{0}}. Is there more than one relay running?|~{id}",
+            ))
+        }
     };
     match message.contents {
         MessageContentsV2::PlayerCreateRequest(r) => player_create::handle_destination_result_on_sender(ctx, r, error),

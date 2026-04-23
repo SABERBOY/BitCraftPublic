@@ -80,3 +80,4 @@ pub mod trade_session_state;
 pub mod traveler_task_state;
 pub mod user_moderation_state;
 pub mod vault_state;
+pub mod quest_drop_desc;

@@ -887,7 +887,7 @@ impl InventoryState {
             //handle item list items
             if let Some(item_desc) = ctx.db.item_desc().id().find(&item_stack.item_id) {
                 if item_desc.item_list_id != 0 {
-                    let converted_item_stacks = ItemListDesc::extract_item_stacks(ctx, item_desc.item_list_id);
+                    let converted_item_stacks = ItemListDesc::extract_item_stacks(ctx, item_desc.item_list_id, Some(player_entity_id));
 
                     // Attempt adding the extra converted items wherever you can in the inventory
                     if !dry_run {
@@ -1110,7 +1110,7 @@ impl InventoryState {
             //handle item list items
             if let Some(item_desc) = ctx.db.item_desc().id().find(&item_stack.item_id) {
                 if item_desc.item_list_id != 0 {
-                    let converted_item_stacks = ItemListDesc::extract_item_stacks(ctx, item_desc.item_list_id);
+                    let converted_item_stacks = ItemListDesc::extract_item_stacks(ctx, item_desc.item_list_id, Some(player_entity_id));
 
                     for _ in 0..item_stack.quantity {
                         for i in 0..converted_item_stacks.len() {
@@ -1166,7 +1166,7 @@ impl InventoryState {
                     //handle item list items
                     if let Some(item_desc) = ctx.db.item_desc().id().find(&item_stack.item_id) {
                         if item_desc.item_list_id != 0 {
-                            let converted_item_stacks = ItemListDesc::extract_item_stacks(ctx, item_desc.item_list_id);
+                            let converted_item_stacks = ItemListDesc::extract_item_stacks(ctx, item_desc.item_list_id, Some(discovery.player_entity_id));
 
                             for _ in 0..item_stack.quantity {
                                 // Attempt adding the extra converted items wherever you can in the inventory
@@ -1289,12 +1289,7 @@ impl InventoryState {
         let max_distance = ctx.db.parameters_desc().version().find(&0).unwrap().withdraw_from_deployables_range;
         let mut inventories = Self::get_nearby_deployable_inventories(ctx, player_entity_id, get_distance_fn, max_distance);
 
-        if inventories.len() == 0 {
-            return Ok(false);
-        }
-
         let player_wallet = unwrap_or_err!(InventoryState::get_player_wallet(ctx, player_entity_id), "Player has no wallet");
-
         inventories.insert(0, player_wallet);
         inventories.insert(1, player_inventory);
 
@@ -1397,7 +1392,7 @@ impl InventoryState {
             }
 
             for _ in 0..item_stack.quantity {
-                output.extend(ItemListDesc::extract_item_stacks(ctx, item_list_id));
+                output.extend(ItemListDesc::extract_item_stacks(ctx, item_list_id, Some(player_entity_id)));
             }
 
             discovery.acquire_item_stack(ctx, &item_stack);

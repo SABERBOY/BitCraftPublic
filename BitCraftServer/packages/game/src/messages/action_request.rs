@@ -17,7 +17,7 @@ pub struct PlayerMoveRequest {
     pub origin: Option<OffsetCoordinatesFloat>,
     pub duration: f32,
     pub move_type: i32,
-    pub running: bool,
+    pub is_rp_walk: bool,
 }
 
 #[derive(SpacetimeType)]
@@ -253,6 +253,7 @@ pub struct PlayerTradeDeclineRequest {
 pub struct PlayerBarterStallOrderAccept {
     pub trade_order_entity_id: u64,
     pub shop_entity_id: u64,
+    pub amount: i32,
 }
 
 #[derive(SpacetimeType)]
@@ -474,6 +475,7 @@ pub struct ClaimSetPurchaseSupplyPriceRequest {
 #[derive(SpacetimeType)]
 pub struct ClaimPurchaseSuppliesFromPlayerRequest {
     pub building_entity_id: u64,
+    pub from_pocket: PocketKey,
     pub paid_supplies: i32,    // in case the amount of supplies to threshold changed since the acceptation
     pub price_per_supply: f32, // in case the price per supplies changed since the acceptation
 }

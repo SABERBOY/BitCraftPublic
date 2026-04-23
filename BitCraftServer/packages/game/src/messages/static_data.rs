@@ -217,7 +217,7 @@ pub enum EnemyType {
     
     JungleLargeBird = 15,
     DesertLargeBird = 16,
-
+    
     // Monsters
     Jakyl = 17,
     AlphaJakyl = 18,
@@ -226,32 +226,33 @@ pub enum EnemyType {
     RockCrab = 20,
     DesertCrab = 21,
     FrostCrab = 22,
-
+    
     ForestToad = 23,
     SwampToad = 24,
     FrostToad = 25,
-
+    
     Umbura = 26,
     AlphaUmbura = 27,
     KingUmbura = 28,
-
+    
     Drone = 29,
     Soldier = 30,
     Queen = 31,
-
+    
     Sentinel = 32,
     SentinelDungeonJakyl = 33,
     SentinelDungeonSkitch = 34,
     SentinelDungeonLargeJakyl = 35,
-
+    
     CrabDungeonCrabBoss = 36,
     CrabDungeonCrabTrash = 37,
-
+    
     SpiderDungeonEliteSpider = 38,
     SpiderDungeonSmallSpider = 39,
     SpiderDungeonSpiderNest = 40,
-
+    
     EnragedAlphaJakyl = 41,
+    DeerSwift = 42,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, spacetimedb::SpacetimeType)]
@@ -288,8 +289,8 @@ pub enum CharacterStatType {
     PassiveHealthRegenRate,
     PassiveStaminaRegenRate,
     MovementMultiplier,
-    SprintMultiplier,
-    SprintStaminaDrain,
+    SprintMultiplier, // deprecated [FINAL RELEASE]
+    SprintStaminaDrain, // deprecated [FINAL RELEASE]
     Armor,
     CooldownMultiplier,
     HuntingWeaponPower,
@@ -998,7 +999,7 @@ pub struct ParametersDesc {
     pub min_distance_between_claims: i32,
     pub starting_supplies: i32,
     pub show_shield_bar_percent: f32,
-    pub swim_sprint_speed_multiplier: f32,
+    pub swim_sprint_speed_multiplier: f32, // deprecated [FINAL RELEASE]
     pub loot_chest_despawn_time_seconds: f32,
     pub deployable_disembark_max_elevation: i32,
     pub default_num_toolbelt_pockets: i32,
@@ -1066,6 +1067,8 @@ pub struct ParametersDesc {
     pub hexite_capsule_currency_cost: u32,
     #[default(0u32)]
     pub prospecting_herd_immunity_secs: u32,
+    #[default(0.0f32)]
+    pub rp_walk_speed: f32,
 }
 
 #[spacetimedb::table(name = parameters_player_move_desc)]
@@ -2449,4 +2452,18 @@ pub struct ColumnPad4u64 {
     pub pad1 : u64,
     pub pad2 : u64,
     pub pad3 : u64,
+}
+
+#[static_data_staging_table(quest_drop_desc)]
+#[spacetimedb::table(name = quest_drop_desc, public, index(name = extraction_id, btree(columns = [extraction_id])), index(name = enemy_id, btree(columns = [enemy_id])), index(name = item_list_id, btree(columns = [item_list_id])))]
+#[derive(Clone, PartialEq, Debug)]
+pub struct QuestDropDesc {
+    #[primary_key]
+    pub id: i32,
+    pub extraction_id: i32,
+    pub enemy_id: i32,
+    pub item_list_id: i32,
+    pub required_quest_id: i32,
+    pub required_stage_id: i32, // If 0, then drops at any stage.
+    pub item_drop: ProbabilisticItemStack,
 }

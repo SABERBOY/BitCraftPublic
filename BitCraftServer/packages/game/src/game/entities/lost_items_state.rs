@@ -83,7 +83,7 @@ impl LostItemsState {
                                 .crafted_item_stacks
                                 // output items may be item lists, resolve them before adding them to the lost inventory state
                                 .iter()
-                                .map(|is| ItemListDesc::extract_item_stacks_from_item(ctx, *is))
+                                .map(|is| ItemListDesc::extract_item_stacks_from_item(ctx, *is, Some(craft.owner_entity_id)))
                                 .flatten(),
                         );
                     }
@@ -119,7 +119,7 @@ impl LostItemsState {
                             // output items may be item lists, resolve them before adding them to the lost inventory state
                             .map(|is| {
                                 let item_stack = ItemStack::new(ctx, is.item_id, is.item_type, is.quantity * completed_crafts);
-                                ItemListDesc::extract_item_stacks_from_item(ctx, item_stack)
+                                ItemListDesc::extract_item_stacks_from_item(ctx, item_stack, Some(progressive_action.owner_entity_id))
                             })
                             .flatten(),
                     );

@@ -242,7 +242,7 @@ pub fn grant_deconstructed_items(ctx: &ReducerContext, actor_id: u64, recipe: &D
             continue;
         }
 
-        let mut converted_stacks = ItemListDesc::extract_item_stacks_from_item(ctx, stack.clone());
+        let mut converted_stacks = ItemListDesc::extract_item_stacks_from_item(ctx, stack.clone(), Some(actor_id));
         for output in converted_stacks.iter_mut() {
             discovery.acquire_item_stack(ctx, output);
             output.auto_collect(ctx, &mut discovery, actor_id);

@@ -211,14 +211,17 @@ impl ItemStack {
 
     // this will be useful if we refactor inventory operations
     pub fn process(&self, ctx: &ReducerContext, discovery: &mut Option<&mut Discovery>) -> Vec<ItemStack> {
+        let mut player_id: Option<u64> = None;
+
         // Discover
         if discovery.is_some() {
             let d = discovery.as_mut().unwrap();
             d.acquire_item_stack(ctx, &self);
+            player_id = Some(d.player_entity_id);
         }
 
         // Extract from Item List
-        let mut new_item_stacks = ItemListDesc::extract_item_stacks_from_item(ctx, *self);
+        let mut new_item_stacks = ItemListDesc::extract_item_stacks_from_item(ctx, *self, player_id);
 
         // Discover and auto-collect definitive items
         if discovery.is_some() {

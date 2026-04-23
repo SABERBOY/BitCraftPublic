@@ -1,18 +1,12 @@
 use spacetimedb::ReducerContext;
 
 use crate::{
-    action_state,
-    agents::crumb_trail_clean_up_agent,
-    enemy_state,
-    game::{autogen::_delete_entity::delete_entity, reducer_helpers::player_action_helpers::post_reducer_update_cargo},
-    herd_state,
-    messages::{
+    ThreatState, action_state, agents::crumb_trail_clean_up_agent, enemy_state, game::{autogen::_delete_entity::delete_entity, reducer_helpers::player_action_helpers::post_reducer_update_cargo}, herd_state, messages::{
         action_request::EnemySpawnLootRequest,
         authentication::ServerIdentity,
-        components::{ability_state, crumb_trail_contribution_lock_state, crumb_trail_state, ContributionState, InventoryState},
-        static_data::enemy_desc,
-    },
-    ThreatState,
+        components::{ContributionState, InventoryState, ability_state, crumb_trail_contribution_lock_state, crumb_trail_state},
+        static_data::{QuestDropDesc, enemy_desc},
+    }
 };
 
 #[spacetimedb::table(name = enemy_despawn_timer, scheduled(enemy_despawn, at = scheduled_at))]
@@ -35,6 +29,10 @@ pub fn enemy_spawn_loot(ctx: &ReducerContext, request: EnemySpawnLootRequest) ->
         if let Some(rolled) = stack.roll(ctx, 1) {
             output.push(rolled);
         }
+    }
+    // Quest drops
+    if let Some(mut drops) = QuestDropDesc::roll_enemy(ctx, request.player_entity_id, request.enemy_type) {
+        output.append(&mut drops);
     }
 
     if output.len() > 0 {

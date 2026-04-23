@@ -396,13 +396,7 @@ pub fn try_spawn_resource_multiple_attempts(
     hex_coordinates: Vec<SmallHexTile>,
 ) -> (Vec<(i32, SmallHexTileMessage, i32)>, Vec<u64>, usize) {
     let clump_desc = ctx.db.resource_clump_desc().id().find(&clump_info.clump_id).unwrap();
-    let req_resources = clump_desc.resource_id.iter().group_by_and_count(|r| **r);
-
-    let mut resource_desc: HashMap<i32, ResourceDesc> = HashMap::new();
-    for res_id in req_resources.keys() {
-        resource_desc.insert(*res_id, ctx.db.resource_desc().id().find(res_id).unwrap());
-    }
-
+    let resource_desc: HashMap<i32, ResourceDesc> = ctx.db.resource_desc().iter().map(|r| (r.id, r)).collect();
     let clump_desc_extended = ResourceClumpDescExtended::new(clump_desc, &resource_desc);
 
     let mut resources_to_delete = Vec::new();

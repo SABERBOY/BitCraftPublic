@@ -189,6 +189,9 @@ impl LargeHexTile {
     }
 
     pub fn distance_to(&self, other: LargeHexTile) -> i32 {
+        if other.dimension != self.dimension {
+            return i32::MAX;
+        }
         return HexCoordinates::from(self).distance_to(other.into());
     }
 
