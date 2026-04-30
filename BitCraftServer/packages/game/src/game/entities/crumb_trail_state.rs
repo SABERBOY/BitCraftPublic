@@ -45,6 +45,7 @@ impl CrumbTrailState {
             pub attempts: i32,
         }
 
+        const TOTAL_MAX_ATTEMPTS: i32 = 250;
         const MAX_ATTEMPTS: i32 = 10;
         const FINAL_PRIZE_MAX_ATTEMPTS: i32 = 30;
 
@@ -92,9 +93,21 @@ impl CrumbTrailState {
             attempts: 0,
         });
 
+        let mut total_attempts = 0;
         let deadzone = prospecting_desc.deadzone_angle_between_crumbs / 360.0 * PI;
 
         while trail.len() > 0 {
+            total_attempts += 1;
+
+            if total_attempts > TOTAL_MAX_ATTEMPTS {
+                log::info!(
+                    "CrumbTrailState::create aborted after {} total attempts for prospecting_id {}",
+                    total_attempts,
+                    prospecting_id
+                );
+                return None;
+            }
+
             let current_trail_length = trail.len();
             let is_prize_node = current_trail_length > target_crumb_count as usize; // Note: Trail 0 is the prospecting point and not technically part of the crumbs
 

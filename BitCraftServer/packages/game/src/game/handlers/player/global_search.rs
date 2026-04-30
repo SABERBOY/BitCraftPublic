@@ -41,7 +41,7 @@ pub fn search_for_closest_building(ctx: &ReducerContext, building_description_id
     }
 
     if closest.is_none() {
-        return Err(format!("Could not find certain buildings in the world.").into());
+        return Ok(());
     }
 
     let building_desc = unwrap_or_err!(ctx.db.building_desc().id().find(&closest_id), "Invalid Building Description.");
@@ -102,7 +102,7 @@ pub fn search_for_closest_building_type(ctx: &ReducerContext, building_type_id: 
     }
 
     if closest.is_none() {
-        return Err(format!("Could not find this building type in the world").into());
+        return Ok(());
     }
 
     let ls: LocationState = closest.unwrap();

@@ -1,4 +1,3 @@
-use bitcraft_macro::feature_gate;
 use super::inventory_helper;
 use crate::game::discovery::Discovery;
 use crate::game::entities::building_state::InventoryState;
@@ -8,8 +7,8 @@ use crate::game::reducer_helpers::loot_chest_helpers;
 use crate::game::reducer_helpers::player_action_helpers;
 use crate::messages::action_request::PlayerItemStackMoveAllRequest;
 use crate::messages::components::*;
-use crate::messages::game_util::*;
 use crate::unwrap_or_err;
+use bitcraft_macro::feature_gate;
 use spacetimedb::ReducerContext;
 
 #[spacetimedb::reducer]
@@ -86,7 +85,7 @@ pub fn item_stack_move_all(ctx: &ReducerContext, request: PlayerItemStackMoveAll
             None => continue,
         };
 
-        if contents.item_type != ItemType::Item || contents.item_id != source_item.item_id {
+        if contents.item_id != source_item.item_id {
             continue;
         }
 

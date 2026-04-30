@@ -9,7 +9,6 @@ pub mod admin_delete_moderation_action_log_entry;
 pub mod admin_grant_shards;
 pub mod admin_log_moderation_action;
 pub mod admin_manage_developers;
-pub mod admin_manage_gated_features;
 pub mod admin_mark_premium_purchase_processed;
 pub mod admin_mark_user_report_actioned;
 pub mod admin_moderation_config;

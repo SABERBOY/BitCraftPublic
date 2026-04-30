@@ -3,18 +3,18 @@ pub use crate::messages::game_util::ExperienceStack;
 impl ExperienceStack {
     // TODO: should these values be coming from static data?
 
-    pub const MAX_LEVEL: i32 = 110;
+    pub const MAX_LEVEL: i32 = 125;
 
     pub const MULTIPLIER: i32 = 10;
 
-    pub const LEVEL_ONE_EXPERIENCE: i32 = 64;
+    pub const LEVEL_ONE_EXPERIENCE: i32 = 52;
 
     pub fn experience_for_level(level: i32) -> i32 {
         if level > Self::MAX_LEVEL {
             return -1;
         }
 
-        let growth_rate = 2.0_f32.powf(0.145f32);
+        let growth_rate = 2.0_f32.powf(0.158f32);
 
         return f32::floor(
             Self::LEVEL_ONE_EXPERIENCE as f32

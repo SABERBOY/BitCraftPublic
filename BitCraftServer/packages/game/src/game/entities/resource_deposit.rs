@@ -212,8 +212,17 @@ impl ResourceState {
     pub fn produce_offspawn(ctx: &ReducerContext, resource_id: i32, coord: SmallHexTile, deposit_direction: i32) {
         // Respawn resource right away since it's likely a resource that undergoes a state change.
         // We assume the footprint will be the same or included within the original shape.
-        let respawn_resource_id = ctx.db.resource_desc().id().find(&resource_id).unwrap().on_destroy_yield_resource_id;
-        if respawn_resource_id != 0 {
+        let resource_desc = ctx.db.resource_desc().id().find(&resource_id).unwrap();
+        let respawn_resource_id = resource_desc.on_destroy_yield_resource_id;
+        let should_spawn = if resource_desc.on_destroy_yield_resource_chance >= 1.0 {
+            true
+        } else if resource_desc.on_destroy_yield_resource_chance <= 0.0 {
+            false
+        } else {
+            ctx.rng().gen_range(0.0..=1.0) <= resource_desc.on_destroy_yield_resource_chance
+        };
+
+        if respawn_resource_id != 0 && should_spawn {
             Self::schedule_resource_spawn(ctx, respawn_resource_id, coord, deposit_direction);
         }
     }

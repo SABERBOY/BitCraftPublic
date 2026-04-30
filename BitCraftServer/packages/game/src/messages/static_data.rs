@@ -536,6 +536,8 @@ pub struct ResourceDesc {
     pub not_respawning: bool,
     #[default(false)]
     pub show_time_left: bool,
+    #[default(1.0f32)]
+    pub on_destroy_yield_resource_chance: f32,
 }
 
 #[static_data_staging_table(cargo_desc)]

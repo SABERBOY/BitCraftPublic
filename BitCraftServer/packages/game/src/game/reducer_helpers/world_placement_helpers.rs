@@ -61,7 +61,7 @@ pub fn verify_or_prepare_footprint(
     // Path 1: CLEAR AND LEVEL
     if clear_and_level_ground {
         if !dry_run {
-            footprint_helpers::clear_and_flatten_terrain_under_footprint(ctx, &footprint);
+            footprint_helpers::clear_and_flatten_terrain_under_footprint(ctx, &footprint, true);
         }
         return Ok(footprint);
     }
